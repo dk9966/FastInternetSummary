@@ -1,6 +1,8 @@
-# Internet Info
+# Internet Info <img src="docs/menubar-icon.png" alt="" width="28" height="28" valign="middle">
 
 A native macOS menu-bar app for the three questions you actually ask about a connection: what am I on, is it doing anything right now, and how fast can it go?
+
+Most importantly, metrics are **streamed**, so it's **fast**.
 
 <img src="docs/panel.png" width="340" alt="Internet Info panel showing Ethernet in use, live activity, and last speed test">
 
@@ -20,12 +22,12 @@ Do not mix those last two numbers. Live activity is traffic right now. The speed
 
 ## Using it
 
-| Action | How |
-| --- | --- |
-| Open / toggle | Click the menu-bar icon, or **⌥⌘.** |
-| Close | X button, or **Escape** |
-| Settings | Gear next to the title |
-| Quit | Settings, or Control-click / right-click the menu-bar icon |
+| Action        | How                                                        |
+| ------------- | ---------------------------------------------------------- |
+| Open / toggle | Click the menu-bar icon, or **⌥⌘.**                        |
+| Close         | X button, or **Escape**                                    |
+| Settings      | Gear next to the title                                     |
+| Quit          | Settings, or Control-click / right-click the menu-bar icon |
 
 Settings covers launch at login, whether live rates appear in the menu bar itself, the sample interval (1s / 2s / 5s), and the global shortcut.
 
