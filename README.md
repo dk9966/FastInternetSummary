@@ -4,7 +4,7 @@ A native macOS menu-bar app for the three questions you actually ask about a con
 
 Most importantly, metrics are **streamed**, so it's **fast**.
 
-<img src="docs/panel.png" width="340" alt="Internet Info panel showing Ethernet in use, live activity, and last speed test">
+<img src="docs/demo.gif" width="340" alt="Press Option-Command-Period to open Internet Info and run a speed test">
 
 It lives in the menu bar. There is no Dock icon. Click the network icon, or press **⌥⌘.**, and a compact panel drops down. Close it with the X or **Escape**.
 
