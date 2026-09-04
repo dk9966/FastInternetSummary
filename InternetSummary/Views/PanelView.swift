@@ -37,7 +37,7 @@ struct PanelView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Text("Internet Info")
+            Text("Internet Summary")
                 .font(.system(size: 15, weight: .semibold, design: .rounded))
             Button {
                 state.isShowingSettings = true

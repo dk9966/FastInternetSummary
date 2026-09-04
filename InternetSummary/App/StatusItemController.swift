@@ -15,7 +15,7 @@ final class StatusItemController: NSObject {
 
         quitMenu = NSMenu()
         quitMenu.addItem(
-            NSMenuItem(title: "Quit Internet Info", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+            NSMenuItem(title: "Quit Internet Summary", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         )
 
         super.init()
@@ -26,7 +26,7 @@ final class StatusItemController: NSObject {
         button.target = self
         button.action = #selector(handleClick)
         button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-        button.toolTip = "Internet Info"
+        button.toolTip = "Internet Summary"
         panel.attach(button: button)
         refresh()
         observe()
@@ -89,7 +89,7 @@ final class StatusItemController: NSObject {
     }
 
     private static func makeImage(named symbol: String) -> NSImage? {
-        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Internet Info")
+        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Internet Summary")
         image?.isTemplate = true
         return image
     }

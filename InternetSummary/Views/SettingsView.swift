@@ -13,7 +13,7 @@ struct SettingsView: View {
             options
             shortcut
             if LoginItemService.needsApproval {
-                Text("Allow Internet Info in System Settings → General → Login Items.")
+                Text("Allow Internet Summary in System Settings → General → Login Items.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -24,7 +24,7 @@ struct SettingsView: View {
                     .foregroundStyle(.orange)
             }
             Spacer(minLength: 8)
-            Button("Quit Internet Info") {
+            Button("Quit Internet Summary") {
                 NSApp.terminate(nil)
             }
             .buttonStyle(.plain)

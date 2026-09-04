@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct InternetInfoApp: App {
+struct InternetSummaryApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {

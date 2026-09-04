@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "AA00000000000000000060"
-               BuildableName = "InternetInfo.app"
-               BlueprintName = "InternetInfo"
-               ReferencedContainer = "container:InternetInfo.xcodeproj">
+               BuildableName = "InternetSummary.app"
+               BlueprintName = "InternetSummary"
+               ReferencedContainer = "container:InternetSummary.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -44,9 +44,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AA00000000000000000060"
-            BuildableName = "InternetInfo.app"
-            BlueprintName = "InternetInfo"
-            ReferencedContainer = "container:InternetInfo.xcodeproj">
+            BuildableName = "InternetSummary.app"
+            BlueprintName = "InternetSummary"
+            ReferencedContainer = "container:InternetSummary.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -61,9 +61,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AA00000000000000000060"
-            BuildableName = "InternetInfo.app"
-            BlueprintName = "InternetInfo"
-            ReferencedContainer = "container:InternetInfo.xcodeproj">
+            BuildableName = "InternetSummary.app"
+            BlueprintName = "InternetSummary"
+            ReferencedContainer = "container:InternetSummary.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

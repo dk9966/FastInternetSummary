@@ -4,7 +4,7 @@ import SystemConfiguration
 
 final class RouteMonitor: @unchecked Sendable {
     private let pathMonitor = NWPathMonitor()
-    private let queue = DispatchQueue(label: "com.danielku.InternetInfo.route")
+    private let queue = DispatchQueue(label: "com.danielku.InternetSummary.route")
     private let wifi = WiFiService()
     private var store: SCDynamicStore?
     private var handler: (@Sendable (NetworkSnapshot) -> Void)?
@@ -51,7 +51,7 @@ final class RouteMonitor: @unchecked Sendable {
 
         guard let store = SCDynamicStoreCreate(
             nil,
-            "com.danielku.InternetInfo" as CFString,
+            "com.danielku.InternetSummary" as CFString,
             callback,
             &context
         ) else {
@@ -149,7 +149,7 @@ final class RouteMonitor: @unchecked Sendable {
     }
 
     private static func primaryInterfaceName() -> String? {
-        guard let store = SCDynamicStoreCreate(nil, "com.danielku.InternetInfo.primary" as CFString, nil, nil) else {
+        guard let store = SCDynamicStoreCreate(nil, "com.danielku.InternetSummary.primary" as CFString, nil, nil) else {
             return nil
         }
         if let ipv4 = SCDynamicStoreCopyValue(store, "State:/Network/Global/IPv4" as CFString) as? [String: Any],
