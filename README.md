@@ -1,4 +1,4 @@
-# Fast Internet Summary <img src="docs/menubar-icon.png" alt="" width="28" height="28" valign="middle">
+# Fast Internet Summary <img src="docs/menubar-icon.svg" alt="" width="28" height="28" valign="middle">
 
 A native macOS menu-bar app for the three questions you actually ask about a connection: what am I on, is it doing anything right now, and how fast can it go?
 
