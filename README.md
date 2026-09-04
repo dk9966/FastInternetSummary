@@ -2,6 +2,8 @@
 
 A native macOS menu-bar app for the three questions you actually ask about a connection: what am I on, is it doing anything right now, and how fast can it go?
 
+<img src="docs/panel.png" width="340" alt="Internet Info panel showing Ethernet in use, live activity, and last speed test">
+
 It lives in the menu bar. There is no Dock icon. Click the network icon, or press **⌥⌘.**, and a compact panel drops down. Close it with the X or **Escape**.
 
 ## What it shows
