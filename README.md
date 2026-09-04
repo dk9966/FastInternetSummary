@@ -8,6 +8,46 @@ Most importantly, metrics are **streamed**, so it's **fast**.
 
 It lives in the menu bar. There is no Dock icon. Click the network icon, or press **⌥⌘.**, and a compact panel drops down. Close it with the X or **Escape**.
 
+## Install
+
+You need a Mac on **macOS 15** or later, and **Xcode** from the App Store. Open Xcode once so the license is accepted. There are no Homebrew packages, no Ookla CLI, no accounts, and no third-party Swift packages.
+
+```bash
+git clone https://github.com/dk9966/FastInternetSummary.git
+cd FastInternetSummary
+bash scripts/install.sh
+```
+
+That builds a Release app, copies it to `/Applications` (or `~/Applications` if that folder is not writable), and opens it. Look for the plug icon in the menu bar.
+
+To put the app somewhere else:
+
+```bash
+PREFIX="$HOME/Applications" bash scripts/install.sh
+```
+
+To work on the code instead:
+
+```bash
+open FastInternetSummary.xcodeproj
+```
+
+Select the **FastInternetSummary** scheme and run it (⌘R).
+
+## Uninstall
+
+Quit from Settings, or Control-click / right-click the menu-bar icon and choose Quit. If Launch at Login is on, turn it off in the app first (or in System Settings → General → Login Items). Then:
+
+```bash
+rm -rf /Applications/FastInternetSummary.app ~/Applications/FastInternetSummary.app
+```
+
+Settings are local only. To drop them too:
+
+```bash
+defaults delete com.danielku.FastInternetSummary
+```
+
 ## What it shows
 
 The panel is three blocks, on purpose.
@@ -33,23 +73,6 @@ Settings covers launch at login, whether live rates appear in the menu bar itsel
 
 The default shortcut is **Option-Command-Period**. It is not a system shortcut, and you can change it.
 
-## Build
-
-Requires macOS 15 or later and Xcode 26. There are no Homebrew packages, no Ookla CLI, and no third-party Swift packages.
-
-```bash
-open FastInternetSummary.xcodeproj
-```
-
-Select the **FastInternetSummary** scheme and run it (⌘R). The app appears in the menu bar.
-
-From the command line:
-
-```bash
-xcodebuild -project FastInternetSummary.xcodeproj -scheme FastInternetSummary -configuration Debug -destination 'platform=macOS' build
-open ~/Library/Developer/Xcode/DerivedData/FastInternetSummary-*/Build/Products/Debug/FastInternetSummary.app
-```
-
 ## How the numbers are measured
 
 Live rates come from `getifaddrs` byte counters on the active interface, sampled on a timer.
@@ -63,3 +86,8 @@ The speed test is `/usr/bin/networkQuality`. Idle latency is Apple’s `base_rtt
 - The Wi‑Fi name comes from CoreWLAN. On some macOS versions the SSID is unavailable without Location permission. This app does not ask for that permission; it still shows connected / in-use state without a name.
 - The app does not request Accessibility or Screen Recording permission. The global shortcut uses `RegisterEventHotKey`.
 - Built as an agent app (`LSUIElement`), so it does not bounce in the Dock.
+- The app does not have an account, analytics, or its own servers. Connection names and live rates stay on the Mac. The speed test is Apple’s `networkQuality`, which talks to Apple.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
