@@ -1,10 +1,10 @@
-# Internet Summary <img src="docs/menubar-icon.png" alt="" width="28" height="28" valign="middle">
+# Fast Internet Summary <img src="docs/menubar-icon.png" alt="" width="28" height="28" valign="middle">
 
 A native macOS menu-bar app for the three questions you actually ask about a connection: what am I on, is it doing anything right now, and how fast can it go?
 
 Most importantly, metrics are **streamed**, so it's **fast**.
 
-<img src="docs/demo.gif" width="340" alt="Press Option-Command-Period to open Internet Summary and run a speed test">
+<img src="docs/demo.gif" width="340" alt="Press Option-Command-Period to open Fast Internet Summary and run a speed test">
 
 It lives in the menu bar. There is no Dock icon. Click the network icon, or press **⌥⌘.**, and a compact panel drops down. Close it with the X or **Escape**.
 
@@ -38,16 +38,16 @@ The default shortcut is **Option-Command-Period**. It is not a system shortcut, 
 Requires macOS 15 or later and Xcode 26. There are no Homebrew packages, no Ookla CLI, and no third-party Swift packages.
 
 ```bash
-open InternetSummary.xcodeproj
+open FastInternetSummary.xcodeproj
 ```
 
-Select the **InternetSummary** scheme and run it (⌘R). The app appears in the menu bar.
+Select the **FastInternetSummary** scheme and run it (⌘R). The app appears in the menu bar.
 
 From the command line:
 
 ```bash
-xcodebuild -project InternetSummary.xcodeproj -scheme InternetSummary -configuration Debug -destination 'platform=macOS' build
-open ~/Library/Developer/Xcode/DerivedData/InternetSummary-*/Build/Products/Debug/InternetSummary.app
+xcodebuild -project FastInternetSummary.xcodeproj -scheme FastInternetSummary -configuration Debug -destination 'platform=macOS' build
+open ~/Library/Developer/Xcode/DerivedData/FastInternetSummary-*/Build/Products/Debug/FastInternetSummary.app
 ```
 
 ## How the numbers are measured

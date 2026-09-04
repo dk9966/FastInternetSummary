@@ -2,7 +2,7 @@ import Carbon
 import Foundation
 
 final class HotkeyService: @unchecked Sendable {
-    static let signature: OSType = 0x4953554D // 'ISUM'
+    static let signature: OSType = 0x4649534D // 'FISM'
     static let toggleID: UInt32 = 1
 
     private var hotKeyRef: EventHotKeyRef?

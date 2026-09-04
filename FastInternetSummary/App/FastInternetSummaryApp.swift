@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct InternetSummaryApp: App {
+struct FastInternetSummaryApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
