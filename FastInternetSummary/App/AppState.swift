@@ -61,6 +61,10 @@ final class AppState {
         onHotkeyChange?()
     }
 
+    func runSpeedTest() {
+        speedTest.run(sequential: settings.sequentialSpeedTest)
+    }
+
     func closePanel() {
         onClosePanel?()
     }

@@ -56,7 +56,7 @@ The panel is three blocks, on purpose.
 
 **Live activity** is what is happening this second. It reads byte counters on the default-route interface about once a second. If nothing is transferring, it sits near zero even on a fast plan. That is expected. This is not a speed test.
 
-**Last speed test** is a capacity measurement using macOS’s built-in `networkQuality` tool. Opening the panel starts one automatically. Idle latency (the **ms** figure) lands almost immediately. Download and upload then run at the same time and update live while the test is still going. Run again to repeat it. Closing the panel cancels a test in progress.
+**Last speed test** is a capacity measurement using macOS’s built-in `networkQuality` tool. Opening the panel starts one automatically. Idle latency (the **ms** figure) lands almost immediately. Download and upload then run at the same time and update live while the test is still going. Turn on **Sequential speed test** in Settings if you want the website-style order: latency, then download, then upload. Run again to repeat it. Closing the panel cancels a test in progress.
 
 Do not mix those last two numbers. Live activity is traffic right now. The speed test is what the line can do under load.
 
@@ -69,7 +69,7 @@ Do not mix those last two numbers. Live activity is traffic right now. The speed
 | Settings      | Gear next to the title                                     |
 | Quit          | Settings, or Control-click / right-click the menu-bar icon |
 
-Settings covers launch at login, whether live rates appear in the menu bar itself, the sample interval (1s / 2s / 5s), and the global shortcut.
+Settings covers launch at login, whether live rates appear in the menu bar itself, the sample interval (1s / 2s / 5s), sequential vs parallel speed test, and the global shortcut.
 
 The default shortcut is **Option-Command-Period**. It is not a system shortcut, and you can change it.
 
@@ -77,7 +77,7 @@ The default shortcut is **Option-Command-Period**. It is not a system shortcut, 
 
 Live rates come from `getifaddrs` byte counters on the active interface, sampled on a timer.
 
-The speed test is `/usr/bin/networkQuality`. Idle latency is Apple’s `base_rtt`: a few quiet-line probes (TCP handshake, TLS, HTTP/2) before the line is saturated. Capacity is a parallel download and upload; verbose TTY output is parsed so Mbps can update while the test is still running. Loaded responsiveness (RPM under saturation) is a different measurement and is not shown as ms.
+The speed test is `/usr/bin/networkQuality`. Idle latency is Apple’s `base_rtt`: a few quiet-line probes (TCP handshake, TLS, HTTP/2) before the line is saturated. Capacity is a parallel download and upload by default; Settings can switch that to `-s`, which runs download and then upload. Verbose TTY output is parsed so Mbps can update while the test is still running. Loaded responsiveness (RPM under saturation) is a different measurement and is not shown as ms.
 
 ## Notes
 

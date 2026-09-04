@@ -11,6 +11,7 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 14) {
             header
             options
+            speedTest
             shortcut
             if LoginItemService.needsApproval {
                 Text("Allow Fast Internet Summary in System Settings → General → Login Items.")
@@ -23,7 +24,6 @@ struct SettingsView: View {
                     .font(.system(size: 11))
                     .foregroundStyle(.orange)
             }
-            Spacer(minLength: 8)
             Button("Quit Fast Internet Summary") {
                 NSApp.terminate(nil)
             }
@@ -32,6 +32,7 @@ struct SettingsView: View {
             .foregroundStyle(.secondary)
         }
         .padding(PanelMetrics.padding)
+        .fixedSize(horizontal: false, vertical: true)
         .onAppear {
             state.refreshLoginItem()
         }
@@ -80,6 +81,23 @@ struct SettingsView: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
             }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.primary.opacity(0.045))
+        }
+        .font(.system(size: 13))
+    }
+
+    private var speedTest: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle("Sequential speed test", isOn: $state.settings.sequentialSpeedTest)
+            Text("Idle latency, then download, then upload. Should match Speedtest closely.")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)

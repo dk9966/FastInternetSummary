@@ -35,6 +35,14 @@ dest="$dest_dir/$app_name"
 if pgrep -x FastInternetSummary >/dev/null 2>&1; then
   osascript -e 'tell application "Fast Internet Summary" to quit' >/dev/null 2>&1 || true
   sleep 0.4
+  if pgrep -x FastInternetSummary >/dev/null 2>&1; then
+    pkill -x FastInternetSummary || true
+    sleep 0.3
+  fi
+  if pgrep -x FastInternetSummary >/dev/null 2>&1; then
+    pkill -9 -x FastInternetSummary || true
+    sleep 0.2
+  fi
 fi
 
 rm -rf "$dest"

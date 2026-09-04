@@ -43,7 +43,7 @@ final class PanelController: NSObject, NSPopoverDelegate {
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         button.highlight(true)
         installEscapeMonitor()
-        state.speedTest.run()
+        state.runSpeedTest()
     }
 
     func close() {

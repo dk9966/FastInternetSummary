@@ -12,14 +12,14 @@ struct SpeedTestProgress: Sendable, Equatable {
 
 protocol SpeedTestProvider: Sendable {
     var name: String { get }
-    func run(progress: @escaping @Sendable (SpeedTestProgress) async -> Void) async throws -> SpeedTestResult
+    func run(sequential: Bool, progress: @escaping @Sendable (SpeedTestProgress) async -> Void) async throws -> SpeedTestResult
 }
 
 /// Built-in macOS provider. This is the default and the only one shipped enabled.
 struct NetworkQualityProvider: SpeedTestProvider {
     var name: String { "networkQuality" }
 
-    func run(progress: @escaping @Sendable (SpeedTestProgress) async -> Void) async throws -> SpeedTestResult {
+    func run(sequential: Bool, progress: @escaping @Sendable (SpeedTestProgress) async -> Void) async throws -> SpeedTestResult {
         // Idle latency is measured on a quiet line before capacity testing saturates it.
         // Verbose capacity output never streams ms — only the summary at the end — so we
         // probe first (`-d -u`) and publish base_rtt before the capacity run starts.
@@ -29,10 +29,17 @@ struct NetworkQualityProvider: SpeedTestProvider {
 
         // `script` allocates a TTY so networkQuality prints live Downlink/Uplink lines.
         // `-v` also includes flow counts, which we use to estimate progress.
+        // `-s` is download, then upload — the same order as a typical website test.
+        var arguments = ["-q", "/dev/null", "/usr/bin/networkQuality"]
+        if sequential {
+            arguments.append("-s")
+        }
+        arguments.append("-v")
+
         let output = try await CommandRunner.runStreaming(
             executable: "/usr/bin/script",
-            arguments: ["-q", "/dev/null", "/usr/bin/networkQuality", "-v"],
-            timeout: 90
+            arguments: arguments,
+            timeout: sequential ? 120 : 90
         ) { chunk in
             if let update = parser.ingest(chunk) {
                 Task {
@@ -118,7 +125,7 @@ struct NetworkQualityProvider: SpeedTestProvider {
 struct OoklaSpeedTestProvider: SpeedTestProvider {
     var name: String { "speedtest" }
 
-    func run(progress: @escaping @Sendable (SpeedTestProgress) async -> Void) async throws -> SpeedTestResult {
+    func run(sequential _: Bool, progress: @escaping @Sendable (SpeedTestProgress) async -> Void) async throws -> SpeedTestResult {
         throw SpeedTestError.notConfigured
     }
 }
@@ -172,9 +179,14 @@ final class NetworkQualityStreamParser: @unchecked Sendable {
             progress.latencyMs = idle
         }
 
-        progress.isFinal = text.contains("==== SUMMARY ====")
+        let hasCapacitySummary = text.contains("==== SUMMARY ====")
             || text.contains("Downlink capacity:")
             || text.contains("Download capacity:")
+        // Sequential `-s` prints downlink capacity before upload starts. Both
+        // directions have to be present or the panel would jump to "done" early.
+        progress.isFinal = hasCapacitySummary
+            && progress.downloadMbps != nil
+            && progress.uploadMbps != nil
 
         if progress.downloadMbps == nil,
            progress.uploadMbps == nil,

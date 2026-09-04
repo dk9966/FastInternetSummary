@@ -10,7 +10,6 @@ enum SpeedTestPhase: Equatable {
 @MainActor
 @Observable
 final class SpeedTestRunner {
-    private let typicalDuration: TimeInterval = 16
     private let maxFlows = 16.0
 
     private(set) var lastResult: SpeedTestResult?
@@ -31,6 +30,11 @@ final class SpeedTestRunner {
     private var runID = UUID()
     private var runningTask: Task<Void, Never>?
     private var progressTimer: Timer?
+    private var sequentialThisRun = false
+
+    private var typicalDuration: TimeInterval {
+        sequentialThisRun ? 30 : 16
+    }
 
     var isRunning: Bool {
         switch phase {
@@ -54,6 +58,15 @@ final class SpeedTestRunner {
         if sawFinalSummary || percentComplete >= 0.97 {
             return "Finishing up"
         }
+        if sequentialThisRun {
+            if !receivedDownloadThisRun {
+                return "Measuring download"
+            }
+            if !receivedUploadThisRun {
+                return "Measuring upload"
+            }
+            return "Settling the numbers"
+        }
         if !receivedDownloadThisRun {
             return "Starting test"
         }
@@ -62,9 +75,6 @@ final class SpeedTestRunner {
         }
         if !receivedResponsivenessThisRun {
             return "Measuring upload"
-        }
-        if !receivedLatencyThisRun, downloadFlows < 5, uploadFlows < 5 {
-            return "Measuring round-trip time"
         }
         if downloadFlows < 10, uploadFlows < 10 {
             return "Stressing the connection"
@@ -78,8 +88,9 @@ final class SpeedTestRunner {
         savedResult = lastResult
     }
 
-    func run() {
+    func run(sequential: Bool = false) {
         guard !inFlight else { return }
+        sequentialThisRun = sequential
         inFlight = true
         receivedDownloadThisRun = false
         receivedUploadThisRun = false
@@ -117,7 +128,7 @@ final class SpeedTestRunner {
 
     private func executeTest(id: UUID) async {
         do {
-            let result = try await provider.run { progress in
+            let result = try await provider.run(sequential: sequentialThisRun) { progress in
                 await MainActor.run { [weak self] in
                     self?.apply(progress, id: id)
                 }
@@ -226,9 +237,14 @@ final class SpeedTestRunner {
 
         var floor = 0.04
         if receivedLatencyThisRun { floor = max(floor, 0.10) }
-        if receivedDownloadThisRun { floor = max(floor, 0.22) }
-        if receivedUploadThisRun { floor = max(floor, 0.38) }
-        if downloadFlows >= 8 || uploadFlows >= 8 { floor = max(floor, 0.7) }
+        if sequentialThisRun {
+            if receivedDownloadThisRun { floor = max(floor, 0.48) }
+            if receivedUploadThisRun { floor = max(floor, 0.78) }
+        } else {
+            if receivedDownloadThisRun { floor = max(floor, 0.22) }
+            if receivedUploadThisRun { floor = max(floor, 0.38) }
+            if downloadFlows >= 8 || uploadFlows >= 8 { floor = max(floor, 0.7) }
+        }
 
         percentComplete = min(0.96, max(floor, max(timeShare, flowShare)))
     }

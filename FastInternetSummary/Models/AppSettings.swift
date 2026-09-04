@@ -7,6 +7,7 @@ final class AppSettings {
     private enum Keys {
         static let sampleInterval = "settings.sampleInterval"
         static let showLiveRatesInMenuBar = "settings.showLiveRatesInMenuBar"
+        static let sequentialSpeedTest = "settings.sequentialSpeedTest"
         static let hotkeyKeyCode = "settings.hotkeyKeyCode"
         static let hotkeyModifiers = "settings.hotkeyModifiers"
     }
@@ -26,6 +27,10 @@ final class AppSettings {
         didSet { UserDefaults.standard.set(showLiveRatesInMenuBar, forKey: Keys.showLiveRatesInMenuBar) }
     }
 
+    var sequentialSpeedTest: Bool {
+        didSet { UserDefaults.standard.set(sequentialSpeedTest, forKey: Keys.sequentialSpeedTest) }
+    }
+
     var hotkeyKeyCode: UInt32 {
         didSet { UserDefaults.standard.set(Int(hotkeyKeyCode), forKey: Keys.hotkeyKeyCode) }
     }
@@ -38,6 +43,7 @@ final class AppSettings {
         let storedInterval = defaults.object(forKey: Keys.sampleInterval) as? Double
         sampleInterval = storedInterval ?? 1
         showLiveRatesInMenuBar = defaults.object(forKey: Keys.showLiveRatesInMenuBar) as? Bool ?? false
+        sequentialSpeedTest = defaults.object(forKey: Keys.sequentialSpeedTest) as? Bool ?? false
 
         let storedKeyCode = defaults.object(forKey: Keys.hotkeyKeyCode).map { _ in
             UInt32(defaults.integer(forKey: Keys.hotkeyKeyCode))

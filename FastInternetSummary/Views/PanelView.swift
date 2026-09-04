@@ -16,7 +16,9 @@ struct RootPanel: View {
                 PanelView(state: state)
             }
         }
+        .id(state.isShowingSettings)
         .frame(width: PanelMetrics.width)
+        .fixedSize(horizontal: false, vertical: true)
         .preferredColorScheme(nil)
     }
 }
@@ -170,7 +172,7 @@ struct PanelView: View {
             .padding(.vertical, 2)
         } else {
             Button {
-                state.speedTest.run()
+                state.runSpeedTest()
             } label: {
                 Text("Run again")
                     .font(.system(size: 13, weight: .semibold))
