@@ -7,6 +7,7 @@ final class PanelController: NSObject, NSPopoverDelegate {
     private let state: AppState
     private weak var statusButton: NSStatusBarButton?
     private var escapeMonitor: Any?
+    private var isPresented = false
 
     init(state: AppState) {
         self.state = state
@@ -27,12 +28,8 @@ final class PanelController: NSObject, NSPopoverDelegate {
         statusButton = button
     }
 
-    var isShown: Bool {
-        popover.isShown
-    }
-
     func toggle() {
-        if popover.isShown {
+        if isPresented {
             close()
         } else {
             show()
@@ -40,7 +37,8 @@ final class PanelController: NSObject, NSPopoverDelegate {
     }
 
     func show() {
-        guard let button = statusButton else { return }
+        guard !isPresented, let button = statusButton else { return }
+        isPresented = true
         NSApp.activate(ignoringOtherApps: true)
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         button.highlight(true)
@@ -49,6 +47,8 @@ final class PanelController: NSObject, NSPopoverDelegate {
     }
 
     func close() {
+        guard isPresented else { return }
+        isPresented = false
         popover.performClose(nil)
         statusButton?.highlight(false)
         state.isShowingSettings = false
@@ -56,6 +56,7 @@ final class PanelController: NSObject, NSPopoverDelegate {
     }
 
     func popoverDidClose(_ notification: Notification) {
+        isPresented = false
         statusButton?.highlight(false)
         state.isShowingSettings = false
         state.speedTest.cancel()

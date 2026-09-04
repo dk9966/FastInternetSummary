@@ -8,6 +8,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var hotkey: HotkeyService?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        terminateOtherInstances()
+
         NSApp.setActivationPolicy(.accessory)
         NSApp.windows.forEach { $0.close() }
 
@@ -40,5 +42,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         panel?.toggle()
         return false
+    }
+
+    private func terminateOtherInstances() {
+        guard let bundleID = Bundle.main.bundleIdentifier else { return }
+        let pid = ProcessInfo.processInfo.processIdentifier
+        let others = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+            .filter { $0.processIdentifier != pid }
+        guard !others.isEmpty else { return }
+
+        others.forEach { $0.terminate() }
+
+        let deadline = Date().addingTimeInterval(1)
+        while Date() < deadline, others.contains(where: { !$0.isTerminated }) {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+        }
+
+        others.filter { !$0.isTerminated }.forEach { $0.forceTerminate() }
     }
 }
