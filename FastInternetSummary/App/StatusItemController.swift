@@ -80,7 +80,8 @@ final class StatusItemController: NSObject {
         }
         switch state.snapshot.inUseKind {
         case .wifi:
-            return "wifi"
+            // Antenna + waves, not the Control Center "wifi" fan.
+            return "antenna.radiowaves.left.and.right"
         case .ethernet:
             return "cable.connector"
         case nil:
