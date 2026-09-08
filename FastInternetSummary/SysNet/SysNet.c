@@ -42,6 +42,19 @@ bool IIInterfaceBytes(const char *name, uint64_t *ibytes, uint64_t *obytes) {
     return found;
 }
 
+static bool copy_ifmedia(const char *name, struct ifmediareq *request) {
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+        return false;
+    }
+
+    memset(request, 0, sizeof(*request));
+    strlcpy(request->ifm_name, name, sizeof(request->ifm_name));
+    int rc = ioctl(sock, SIOCGIFMEDIA, request);
+    close(sock);
+    return rc == 0;
+}
+
 bool IIInterfaceIsUp(const char *name) {
     if (name == NULL) {
         return false;
@@ -62,7 +75,17 @@ bool IIInterfaceIsUp(const char *name) {
     }
 
     freeifaddrs(addrs);
-    return up;
+    if (!up) {
+        return false;
+    }
+
+    // ifconfig's "status: inactive" — IFF_RUNNING stays set with the cable out.
+    struct ifmediareq request;
+    if (copy_ifmedia(name, &request) && (request.ifm_status & IFM_AVALID)) {
+        return (request.ifm_status & IFM_ACTIVE) != 0;
+    }
+
+    return true;
 }
 
 static int mbps_for_subtype(int subtype) {
@@ -123,23 +146,17 @@ int IIEthernetLinkSpeedMbps(const char *name) {
         return -1;
     }
 
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
+    struct ifmediareq request;
+    if (!copy_ifmedia(name, &request)) {
+        return -1;
+    }
+    if ((request.ifm_status & IFM_AVALID) && !(request.ifm_status & IFM_ACTIVE)) {
         return -1;
     }
 
-    struct ifmediareq request;
-    memset(&request, 0, sizeof(request));
-    strlcpy(request.ifm_name, name, sizeof(request.ifm_name));
-
-    int mbps = -1;
-    if (ioctl(sock, SIOCGIFMEDIA, &request) == 0) {
-        int word = request.ifm_active != 0 ? request.ifm_active : request.ifm_current;
-        if (IFM_TYPE(word) == IFM_ETHER) {
-            mbps = mbps_for_subtype(IFM_SUBTYPE(word));
-        }
+    int word = request.ifm_active != 0 ? request.ifm_active : request.ifm_current;
+    if (IFM_TYPE(word) != IFM_ETHER) {
+        return -1;
     }
-
-    close(sock);
-    return mbps;
+    return mbps_for_subtype(IFM_SUBTYPE(word));
 }

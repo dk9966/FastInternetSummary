@@ -9,6 +9,8 @@ enum InterfaceCounters {
         return (ibytes, obytes)
     }
 
+    /// Administratively up with a live carrier. Unplugged Ethernet stays
+    /// IFF_UP/IFF_RUNNING on macOS; this is false once the link drops.
     static func isUp(_ name: String) -> Bool {
         name.withCString { IIInterfaceIsUp($0) }
     }

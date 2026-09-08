@@ -104,7 +104,9 @@ final class SpeedTestRunner {
     }
 
     func run(sequential: Bool = false, using provider: any SpeedTestProvider = NetworkQualityProvider()) {
-        guard !inFlight else { return }
+        if inFlight {
+            cancel()
+        }
         providerName = provider.name
         sequentialThisRun = sequential
         inFlight = true

@@ -96,4 +96,8 @@ struct NetworkSnapshot: Sendable, Equatable {
         if wifi.status == .inUse { return .wifi }
         return nil
     }
+
+    func isSamePath(as other: NetworkSnapshot) -> Bool {
+        inUseKind == other.inUseKind && activeInterfaceName == other.activeInterfaceName
+    }
 }

@@ -13,9 +13,12 @@ final class AppState {
 
     var onHotkeyChange: (() -> Void)?
     var onClosePanel: (() -> Void)?
+    private(set) var isPanelOpen = false
 
     private let routeMonitor = RouteMonitor()
     private let sampler = ByteRateSampler()
+    private var needsPathRerun = false
+    private var pathRerunTask: Task<Void, Never>?
 
     func start() {
         sampler.onTick = { [weak self] rates in
@@ -33,9 +36,19 @@ final class AppState {
     }
 
     func apply(_ snapshot: NetworkSnapshot) {
+        let previous = self.snapshot
         self.snapshot = snapshot
         sampler.setInterface(snapshot.activeInterfaceName)
         warmOoklaIfNeeded()
+        considerPathRerun(from: previous, to: snapshot)
+    }
+
+    func setPanelOpen(_ open: Bool) {
+        isPanelOpen = open
+        if !open {
+            pathRerunTask?.cancel()
+            pathRerunTask = nil
+        }
     }
 
     func setSampleInterval(_ interval: TimeInterval) {
@@ -68,11 +81,36 @@ final class AppState {
     }
 
     func runSpeedTest() {
+        needsPathRerun = false
+        pathRerunTask?.cancel()
+        pathRerunTask = nil
         if settings.useOoklaSpeedTest {
             let key = OoklaNearbyServer.networkKey(from: snapshot)
             speedTest.run(sequential: true, using: OoklaSpeedTestProvider(networkKey: key))
         } else {
             speedTest.run(sequential: !settings.simultaneousSpeedTest)
+        }
+    }
+
+    // Panel open and the path in use changed (ethernet unplug → wifi): wait for
+    // the route to settle, then start a fresh test on the new path.
+    private func considerPathRerun(from previous: NetworkSnapshot, to snapshot: NetworkSnapshot) {
+        let pathChanged = !snapshot.isSamePath(as: previous)
+        if pathChanged {
+            needsPathRerun = true
+        }
+
+        let internetCameBack = !previous.hasInternet && snapshot.hasInternet
+        guard needsPathRerun, isPanelOpen else { return }
+        guard pathChanged || internetCameBack else { return }
+        guard snapshot.hasInternet else { return }
+
+        pathRerunTask?.cancel()
+        pathRerunTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            guard let self, self.isPanelOpen, self.needsPathRerun, self.snapshot.hasInternet else { return }
+            self.runSpeedTest()
         }
     }
 

@@ -68,12 +68,14 @@ final class PanelController: NSObject, NSPopoverDelegate {
         statusButton?.highlight(true)
         installEscapeMonitor()
         installScreenFollowMonitors()
+        state.setPanelOpen(true)
         state.runSpeedTest()
     }
 
     func close() {
         guard isPresented || popover.isShown else { return }
         isPresented = false
+        state.setPanelOpen(false)
         popover.performClose(nil)
         statusButton?.highlight(false)
         state.isShowingSettings = false
@@ -86,6 +88,7 @@ final class PanelController: NSObject, NSPopoverDelegate {
         isPresented = false
         statusButton?.highlight(false)
         state.isShowingSettings = false
+        state.setPanelOpen(false)
         state.speedTest.cancel()
         hidePositioningWindow()
         removeEscapeMonitor()

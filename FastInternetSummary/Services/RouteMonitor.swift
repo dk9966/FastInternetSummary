@@ -59,7 +59,8 @@ final class RouteMonitor: @unchecked Sendable {
         }
 
         let keys = ["State:/Network/Global/IPv4", "State:/Network/Global/IPv6"] as CFArray
-        SCDynamicStoreSetNotificationKeys(store, keys, nil)
+        let patterns = ["State:/Network/Interface/.*/Link"] as CFArray
+        SCDynamicStoreSetNotificationKeys(store, keys, patterns)
         SCDynamicStoreSetDispatchQueue(store, queue)
         self.store = store
     }

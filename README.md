@@ -2,8 +2,6 @@
 
 A native macOS menu-bar app for the three questions you actually ask about a connection: what am I on, is it doing anything right now, and how fast can it go?
 
-Most importantly, metrics are **streamed**, so it's **fast**.
-
 <img src="docs/demo.gif" width="340" alt="Press Option-Command-Period to open Fast Internet Summary and run a speed test">
 
 No Dock icon. Click the plug/antenna, or press **⌥⌘.**, and a compact panel drops down on the display the mouse is on. Close it with the X or **Escape**.
@@ -44,7 +42,7 @@ Three blocks:
 
 **Live activity** — byte counters on the default-route interface, about once a second. Near zero when nothing is transferring, even on a fast plan. That is expected. This is not a speed test.
 
-**Speed test** — capacity. The title is the engine: **MacOS Network Quality** by default, or **Ookla Speedtest** from Settings. Opening the panel starts one. Idle latency (**ms** on the right) lands almost immediately; download and upload then run one after the other and update live. Ping under each speed is latency while that direction is filling the line.
+**Speed test** — capacity. The title is the engine: **MacOS Network Quality** by default, or **Ookla Speedtest** from Settings. Opening the panel starts one. If the path in use changes while the panel is open (ethernet unplugged, Wi‑Fi takes over), a new test starts on the new path. Idle latency (**ms** on the right) lands almost immediately; download and upload then run one after the other and update live. Ping under each speed is latency while that direction is filling the line.
 
 A progress bar and stage line sit under the numbers: idle latency, then download, then upload. The last complete result stays on the Mac, with a **Checked … ago** line. A new test keeps those numbers faded until fresh samples replace them.
 
