@@ -6,6 +6,7 @@ struct SpeedTestProgress: Sendable, Equatable {
     var latencyMs: Double?
     var downloadFlows: Int?
     var uploadFlows: Int?
+    var fractionComplete: Double?
     var hasLoadedRoundTrip: Bool = false
     var isFinal: Bool = false
 }
@@ -15,7 +16,7 @@ protocol SpeedTestProvider: Sendable {
     func run(sequential: Bool, progress: @escaping @Sendable (SpeedTestProgress) async -> Void) async throws -> SpeedTestResult
 }
 
-/// Built-in macOS provider. This is the default and the only one shipped enabled.
+/// Built-in macOS provider. This is the default.
 struct NetworkQualityProvider: SpeedTestProvider {
     var name: String { "networkQuality" }
 
@@ -117,16 +118,6 @@ struct NetworkQualityProvider: SpeedTestProvider {
         }
         await progress(SpeedTestProgress(latencyMs: ms))
         return ms
-    }
-}
-
-/// Optional future provider for an installed Ookla `speedtest` CLI.
-/// The app does not require Homebrew or that binary to function.
-struct OoklaSpeedTestProvider: SpeedTestProvider {
-    var name: String { "speedtest" }
-
-    func run(sequential _: Bool, progress: @escaping @Sendable (SpeedTestProgress) async -> Void) async throws -> SpeedTestResult {
-        throw SpeedTestError.notConfigured
     }
 }
 

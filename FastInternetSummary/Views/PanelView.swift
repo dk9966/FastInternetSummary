@@ -119,9 +119,14 @@ struct PanelView: View {
 
                 if !state.speedTest.isRunning {
                     TimelineView(.periodic(from: .now, by: 15)) { timeline in
-                        Text(RelativeTimeFormat.checkedPhrase(from: result.testedAt, now: timeline.date))
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
+                        HStack(spacing: 4) {
+                            Text(RelativeTimeFormat.checkedPhrase(from: result.testedAt, now: timeline.date))
+                            if result.source == "speedtest" {
+                                Text("· via Speedtest")
+                            }
+                        }
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
                     }
                 }
             } else if state.speedTest.isRunning {

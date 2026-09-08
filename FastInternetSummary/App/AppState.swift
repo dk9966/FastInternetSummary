@@ -62,7 +62,11 @@ final class AppState {
     }
 
     func runSpeedTest() {
-        speedTest.run(sequential: !settings.simultaneousSpeedTest)
+        if settings.useOoklaSpeedTest {
+            speedTest.run(sequential: true, using: OoklaSpeedTestProvider())
+        } else {
+            speedTest.run(sequential: !settings.simultaneousSpeedTest)
+        }
     }
 
     func closePanel() {

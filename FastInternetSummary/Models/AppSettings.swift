@@ -9,6 +9,7 @@ final class AppSettings {
         static let showLiveRatesInMenuBar = "settings.showLiveRatesInMenuBar"
         static let simultaneousSpeedTest = "settings.simultaneousSpeedTest"
         static let sequentialSpeedTest = "settings.sequentialSpeedTest"
+        static let useOoklaSpeedTest = "settings.useOoklaSpeedTest"
         static let hotkeyKeyCode = "settings.hotkeyKeyCode"
         static let hotkeyModifiers = "settings.hotkeyModifiers"
     }
@@ -32,6 +33,10 @@ final class AppSettings {
         didSet { UserDefaults.standard.set(simultaneousSpeedTest, forKey: Keys.simultaneousSpeedTest) }
     }
 
+    var useOoklaSpeedTest: Bool {
+        didSet { UserDefaults.standard.set(useOoklaSpeedTest, forKey: Keys.useOoklaSpeedTest) }
+    }
+
     var hotkeyKeyCode: UInt32 {
         didSet { UserDefaults.standard.set(Int(hotkeyKeyCode), forKey: Keys.hotkeyKeyCode) }
     }
@@ -53,6 +58,7 @@ final class AppSettings {
         } else {
             simultaneousSpeedTest = false
         }
+        useOoklaSpeedTest = defaults.object(forKey: Keys.useOoklaSpeedTest) as? Bool ?? false
 
         let storedKeyCode = defaults.object(forKey: Keys.hotkeyKeyCode).map { _ in
             UInt32(defaults.integer(forKey: Keys.hotkeyKeyCode))

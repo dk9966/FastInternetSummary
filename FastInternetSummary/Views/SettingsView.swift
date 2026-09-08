@@ -92,12 +92,24 @@ struct SettingsView: View {
     }
 
     private var speedTest: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Toggle("Download and upload together", isOn: $state.settings.simultaneousSpeedTest)
-            Text("Both directions at once. Results can differ from Speedtest.")
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 4) {
+                Toggle("Use Speedtest (Ookla)", isOn: $state.settings.useOoklaSpeedTest)
+                    .disabled(!OoklaCLI.isAvailable && !state.settings.useOoklaSpeedTest)
+                Text(ooklaCaption)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Toggle("Download and upload together", isOn: $state.settings.simultaneousSpeedTest)
+                    .disabled(state.settings.useOoklaSpeedTest)
+                Text(simultaneousCaption)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -106,6 +118,23 @@ struct SettingsView: View {
                 .fill(Color.primary.opacity(0.045))
         }
         .font(.system(size: 13))
+    }
+
+    private var ooklaCaption: String {
+        if OoklaCLI.isAvailable {
+            return "Same engine as the Speedtest app. Uses the official CLI on this Mac."
+        }
+        if state.settings.useOoklaSpeedTest {
+            return "Speedtest CLI is not installed. Turn this off, or install it with brew tap teamookla/speedtest && brew install speedtest."
+        }
+        return "Optional. Install with brew tap teamookla/speedtest && brew install speedtest."
+    }
+
+    private var simultaneousCaption: String {
+        if state.settings.useOoklaSpeedTest {
+            return "Speedtest always measures download, then upload."
+        }
+        return "Both directions at once. Results can differ from Speedtest."
     }
 
     private var shortcut: some View {

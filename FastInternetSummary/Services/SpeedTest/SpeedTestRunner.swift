@@ -17,7 +17,7 @@ final class SpeedTestRunner {
     private(set) var percentComplete: Double = 0
     private(set) var sawFinalSummary = false
 
-    private let provider: any SpeedTestProvider
+    private var providerName = "networkQuality"
     private var inFlight = false
     private var savedResult: SpeedTestResult?
     private var receivedDownloadThisRun = false
@@ -31,6 +31,7 @@ final class SpeedTestRunner {
     private var runningTask: Task<Void, Never>?
     private var progressTimer: Timer?
     private var sequentialThisRun = false
+    private var reportedFraction: Double?
 
     private var typicalDuration: TimeInterval {
         sequentialThisRun ? 30 : 16
@@ -82,14 +83,14 @@ final class SpeedTestRunner {
         return "Settling the numbers"
     }
 
-    init(provider: any SpeedTestProvider = NetworkQualityProvider()) {
-        self.provider = provider
+    init() {
         lastResult = SpeedTestResult.load()
         savedResult = lastResult
     }
 
-    func run(sequential: Bool = false) {
+    func run(sequential: Bool = false, using provider: any SpeedTestProvider = NetworkQualityProvider()) {
         guard !inFlight else { return }
+        providerName = provider.name
         sequentialThisRun = sequential
         inFlight = true
         receivedDownloadThisRun = false
@@ -99,6 +100,7 @@ final class SpeedTestRunner {
         sawFinalSummary = false
         downloadFlows = 0
         uploadFlows = 0
+        reportedFraction = nil
         savedResult = SpeedTestResult.load() ?? lastResult
         let id = UUID()
         runID = id
@@ -109,7 +111,7 @@ final class SpeedTestRunner {
 
         runningTask = Task { [weak self] in
             guard let self else { return }
-            await self.executeTest(id: id)
+            await self.executeTest(id: id, provider: provider)
         }
     }
 
@@ -126,7 +128,7 @@ final class SpeedTestRunner {
         phase = .idle
     }
 
-    private func executeTest(id: UUID) async {
+    private func executeTest(id: UUID, provider: any SpeedTestProvider) async {
         do {
             let result = try await provider.run(sequential: sequentialThisRun) { progress in
                 await MainActor.run { [weak self] in
@@ -171,7 +173,7 @@ final class SpeedTestRunner {
             uploadMbps: nil,
             latencyMs: nil,
             testedAt: .now,
-            source: provider.name
+            source: providerName
         )
         if let download = progress.downloadMbps {
             next.downloadMbps = download
@@ -194,6 +196,10 @@ final class SpeedTestRunner {
         if let flows = progress.uploadFlows {
             uploadFlows = max(uploadFlows, flows)
         }
+        if let fraction = progress.fractionComplete {
+            reportedFraction = fraction
+        }
+        next.source = providerName
         next.testedAt = .now
         lastResult = next
         if progress.isFinal {
@@ -228,6 +234,10 @@ final class SpeedTestRunner {
         guard isRunning else { return }
         if isFinal {
             percentComplete = 1
+            return
+        }
+        if let reportedFraction {
+            percentComplete = min(0.96, max(0.04, reportedFraction))
             return
         }
 

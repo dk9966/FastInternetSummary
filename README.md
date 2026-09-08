@@ -10,7 +10,7 @@ It lives in the menu bar. There is no Dock icon. Click the network icon, or pres
 
 ## Install
 
-You need a Mac on **macOS 15** or later, and **Xcode** from the App Store. Open Xcode once so the license is accepted. There are no Homebrew packages, no Ookla CLI, no accounts, and no third-party Swift packages.
+You need a Mac on **macOS 15** or later, and **Xcode** from the App Store. Open Xcode once so the license is accepted. There are no required Homebrew packages, no accounts, and no third-party Swift packages. The speed test uses macOS’s built-in `networkQuality` unless you optionally install Ookla’s CLI.
 
 ```bash
 git clone https://github.com/dk9966/FastInternetSummary.git
@@ -56,7 +56,7 @@ The panel is three blocks, on purpose.
 
 **Live activity** is what is happening this second. It reads byte counters on the default-route interface about once a second. If nothing is transferring, it sits near zero even on a fast plan. That is expected. This is not a speed test.
 
-**Last speed test** is a capacity measurement using macOS’s built-in `networkQuality` tool. Opening the panel starts one automatically. Idle latency (the **ms** figure) lands almost immediately. Download and upload then run one after the other (website-style) and update live while the test is still going. Turn on **Download and upload together** in Settings if you want both directions at once; those results can differ from Speedtest. Run again to repeat it. Closing the panel cancels a test in progress.
+**Last speed test** is a capacity measurement. Opening the panel starts one automatically. Idle latency (the **ms** figure) lands almost immediately. Download and upload then run one after the other (website-style) and update live while the test is still going. The default engine is macOS’s `networkQuality`. If you have Ookla’s official Speedtest CLI installed, Settings can switch to that — same engine as the Speedtest app. Turn on **Download and upload together** for Apple’s test if you want both directions at once; those results can differ from Speedtest. Run again to repeat it. Closing the panel cancels a test in progress.
 
 Do not mix those last two numbers. Live activity is traffic right now. The speed test is what the line can do under load.
 
@@ -69,7 +69,7 @@ Do not mix those last two numbers. Live activity is traffic right now. The speed
 | Settings      | Gear next to the title                                     |
 | Quit          | Settings, or Control-click / right-click the menu-bar icon |
 
-Settings covers launch at login, whether live rates appear in the menu bar itself, the sample interval (1s / 2s / 5s), simultaneous vs sequential speed test, and the global shortcut.
+Settings covers launch at login, whether live rates appear in the menu bar itself, the sample interval (1s / 2s / 5s), optional Speedtest CLI, simultaneous vs sequential Apple tests, and the global shortcut.
 
 The default shortcut is **Option-Command-Period**. It is not a system shortcut, and you can change it.
 
@@ -77,7 +77,14 @@ The default shortcut is **Option-Command-Period**. It is not a system shortcut, 
 
 Live rates come from `getifaddrs` byte counters on the active interface, sampled on a timer.
 
-The speed test is `/usr/bin/networkQuality`. Idle latency is Apple’s `base_rtt`: a few quiet-line probes (TCP handshake, TLS, HTTP/2) before the line is saturated. Capacity is sequential by default (`-s`: download, then upload). Settings can switch that to a simultaneous download and upload; those results can differ from Speedtest. Verbose TTY output is parsed so Mbps can update while the test is still running. Loaded responsiveness (RPM under saturation) is a different measurement and is not shown as ms.
+The default speed test is `/usr/bin/networkQuality`. Idle latency is Apple’s `base_rtt`: a few quiet-line probes (TCP handshake, TLS, HTTP/2) before the line is saturated. Capacity is sequential by default (`-s`: download, then upload). Settings can switch that to a simultaneous download and upload; those results can differ from Speedtest. Verbose TTY output is parsed so Mbps can update while the test is still running. Loaded responsiveness (RPM under saturation) is a different measurement and is not shown as ms.
+
+If **Use Speedtest (Ookla)** is on, the app runs the official `speedtest` CLI instead (`--format=jsonl`). That is Ookla’s engine, talking to a nearby Speedtest server. JSONL is parsed so ping, download, and upload update live. The CLI is optional; the app still works without it.
+
+```bash
+brew tap teamookla/speedtest
+brew install speedtest
+```
 
 ## Notes
 
@@ -86,7 +93,7 @@ The speed test is `/usr/bin/networkQuality`. Idle latency is Apple’s `base_rtt
 - The Wi‑Fi name comes from CoreWLAN. On some macOS versions the SSID is unavailable without Location permission. This app does not ask for that permission; it still shows connected / in-use state without a name.
 - The app does not request Accessibility or Screen Recording permission. The global shortcut uses `RegisterEventHotKey`.
 - Built as an agent app (`LSUIElement`), so it does not bounce in the Dock.
-- The app does not have an account, analytics, or its own servers. Connection names and live rates stay on the Mac. The speed test is Apple’s `networkQuality`, which talks to Apple.
+- The app does not have an account, analytics, or its own servers. Connection names and live rates stay on the Mac. The default speed test is Apple’s `networkQuality`, which talks to Apple. The optional Speedtest CLI talks to Ookla.
 
 ## License
 
