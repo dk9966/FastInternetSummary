@@ -62,7 +62,7 @@ final class AppState {
     }
 
     func runSpeedTest() {
-        speedTest.run(sequential: settings.sequentialSpeedTest)
+        speedTest.run(sequential: !settings.simultaneousSpeedTest)
     }
 
     func closePanel() {

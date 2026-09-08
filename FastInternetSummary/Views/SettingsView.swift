@@ -93,8 +93,8 @@ struct SettingsView: View {
 
     private var speedTest: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Toggle("Sequential speed test", isOn: $state.settings.sequentialSpeedTest)
-            Text("Idle latency, then download, then upload. Should match Speedtest closely.")
+            Toggle("Download and upload together", isOn: $state.settings.simultaneousSpeedTest)
+            Text("Both directions at once. Results can differ from Speedtest.")
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

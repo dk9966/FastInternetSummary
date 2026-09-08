@@ -7,6 +7,7 @@ final class AppSettings {
     private enum Keys {
         static let sampleInterval = "settings.sampleInterval"
         static let showLiveRatesInMenuBar = "settings.showLiveRatesInMenuBar"
+        static let simultaneousSpeedTest = "settings.simultaneousSpeedTest"
         static let sequentialSpeedTest = "settings.sequentialSpeedTest"
         static let hotkeyKeyCode = "settings.hotkeyKeyCode"
         static let hotkeyModifiers = "settings.hotkeyModifiers"
@@ -27,8 +28,8 @@ final class AppSettings {
         didSet { UserDefaults.standard.set(showLiveRatesInMenuBar, forKey: Keys.showLiveRatesInMenuBar) }
     }
 
-    var sequentialSpeedTest: Bool {
-        didSet { UserDefaults.standard.set(sequentialSpeedTest, forKey: Keys.sequentialSpeedTest) }
+    var simultaneousSpeedTest: Bool {
+        didSet { UserDefaults.standard.set(simultaneousSpeedTest, forKey: Keys.simultaneousSpeedTest) }
     }
 
     var hotkeyKeyCode: UInt32 {
@@ -43,7 +44,15 @@ final class AppSettings {
         let storedInterval = defaults.object(forKey: Keys.sampleInterval) as? Double
         sampleInterval = storedInterval ?? 1
         showLiveRatesInMenuBar = defaults.object(forKey: Keys.showLiveRatesInMenuBar) as? Bool ?? false
-        sequentialSpeedTest = defaults.object(forKey: Keys.sequentialSpeedTest) as? Bool ?? true
+        if let stored = defaults.object(forKey: Keys.simultaneousSpeedTest) as? Bool {
+            simultaneousSpeedTest = stored
+        } else if let sequential = defaults.object(forKey: Keys.sequentialSpeedTest) as? Bool {
+            let migrated = !sequential
+            simultaneousSpeedTest = migrated
+            defaults.set(migrated, forKey: Keys.simultaneousSpeedTest)
+        } else {
+            simultaneousSpeedTest = false
+        }
 
         let storedKeyCode = defaults.object(forKey: Keys.hotkeyKeyCode).map { _ in
             UInt32(defaults.integer(forKey: Keys.hotkeyKeyCode))
@@ -62,6 +71,7 @@ final class AppSettings {
             defaults.set(Int(hotkeyModifiers), forKey: Keys.hotkeyModifiers)
         }
 
+        defaults.removeObject(forKey: Keys.sequentialSpeedTest)
         defaults.removeObject(forKey: "settings.closeHotkeyKeyCode")
         defaults.removeObject(forKey: "settings.closeHotkeyModifiers")
     }
