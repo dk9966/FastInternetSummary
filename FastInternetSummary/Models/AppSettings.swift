@@ -43,7 +43,7 @@ final class AppSettings {
         let storedInterval = defaults.object(forKey: Keys.sampleInterval) as? Double
         sampleInterval = storedInterval ?? 1
         showLiveRatesInMenuBar = defaults.object(forKey: Keys.showLiveRatesInMenuBar) as? Bool ?? false
-        sequentialSpeedTest = defaults.object(forKey: Keys.sequentialSpeedTest) as? Bool ?? false
+        sequentialSpeedTest = defaults.object(forKey: Keys.sequentialSpeedTest) as? Bool ?? true
 
         let storedKeyCode = defaults.object(forKey: Keys.hotkeyKeyCode).map { _ in
             UInt32(defaults.integer(forKey: Keys.hotkeyKeyCode))
