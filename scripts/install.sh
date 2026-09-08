@@ -52,4 +52,4 @@ xattr -dr com.apple.quarantine "$dest" 2>/dev/null || true
 open "$dest"
 
 echo "Installed to $dest"
-echo "Look for the plug icon in the menu bar. Click it, or press Option-Command-Period."
+echo "Look for the plug/antenna icon in the menu bar. Click it, or press Option-Command-Period."

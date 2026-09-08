@@ -6,7 +6,7 @@ Most importantly, metrics are **streamed**, so it's **fast**.
 
 <img src="docs/demo.gif" width="340" alt="Press Option-Command-Period to open Fast Internet Summary and run a speed test">
 
-No Dock icon. Click the plug, or press **⌥⌘.**, and a compact panel drops down on the display the mouse is on. Close it with the X or **Escape**.
+No Dock icon. Click the plug/antenna, or press **⌥⌘.**, and a compact panel drops down on the display the mouse is on. Close it with the X or **Escape**.
 
 ## Install
 
@@ -18,7 +18,7 @@ cd FastInternetSummary
 bash scripts/install.sh
 ```
 
-Builds a Release app, copies it to `/Applications` (or `~/Applications` if needed), and opens it. Look for the plug in the menu bar.
+Builds a Release app, copies it to `/Applications` (or `~/Applications` if needed), and opens it. Look for the plug/antenna in the menu bar.
 
 ```bash
 PREFIX="$HOME/Applications" bash scripts/install.sh   # install elsewhere
