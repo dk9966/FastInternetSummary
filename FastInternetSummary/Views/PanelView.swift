@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 enum PanelMetrics {
@@ -7,6 +8,10 @@ enum PanelMetrics {
 
 struct RootPanel: View {
     @Bindable var state: AppState
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.controlActiveState) private var controlActiveState
+
+    private var isParked: Bool { controlActiveState != .key }
 
     var body: some View {
         Group {
@@ -19,7 +24,16 @@ struct RootPanel: View {
         .id(state.isShowingSettings)
         .frame(width: PanelMetrics.width)
         .fixedSize(horizontal: false, vertical: true)
+        .background {
+            Color.black.opacity(isParked ? parkedTint : 0)
+        }
+        .background(PopoverChromeLock())
+        .environment(\.controlActiveState, .key)
         .preferredColorScheme(nil)
+    }
+
+    private var parkedTint: Double {
+        colorScheme == .dark ? 0.06 : 0.03
     }
 }
 
@@ -97,57 +111,21 @@ struct PanelView: View {
 
     private var speedTestBlock: some View {
         VStack(alignment: .leading, spacing: 8) {
-            SectionLabel(title: "Last Speed Test")
-            if let result = state.speedTest.lastResult {
-                HStack(spacing: 12) {
-                    SpeedMetricText(
-                        text: result.downloadMbps.map { "\(ThroughputFormat.mbps($0)) down" } ?? "— down",
-                        isStale: state.speedTest.isDownloadStale
-                    )
-                    SpeedMetricText(
-                        text: result.uploadMbps.map { "\(ThroughputFormat.mbps($0)) up" } ?? "— up",
-                        isStale: state.speedTest.isUploadStale
-                    )
-                    SpeedMetricText(
-                        text: result.latencyMs.map { ThroughputFormat.latency($0) } ?? "— ms",
-                        isStale: state.speedTest.isLatencyStale
-                    )
-                }
-                .font(.system(size: 12.5, weight: .medium, design: .rounded))
-                .minimumScaleFactor(0.85)
-                .lineLimit(1)
+            SectionLabel(title: speedTestMethodTitle)
+            if state.speedTest.lastResult != nil || state.speedTest.isRunning {
+                SpeedMetricsRow(speedTest: state.speedTest)
 
-                if !state.speedTest.isRunning {
+                if let checkedAt = state.speedTest.lastCheckedAt {
                     TimelineView(.periodic(from: .now, by: 15)) { timeline in
-                        HStack(spacing: 4) {
-                            Text(RelativeTimeFormat.checkedPhrase(from: result.testedAt, now: timeline.date))
-                            if result.source == "speedtest" {
-                                Text("· via Speedtest")
-                            }
-                        }
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
+                        Text(RelativeTimeFormat.checkedPhrase(from: checkedAt, now: timeline.date))
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
                     }
                 }
-            } else if state.speedTest.isRunning {
-                HStack(spacing: 12) {
-                    Text("— down")
-                    Text("— up")
-                    Text("— ms")
-                }
-                .font(.system(size: 12.5, weight: .medium, design: .rounded))
-                .foregroundStyle(.primary)
             } else {
                 Text("No test yet")
                     .font(.system(size: 12.5))
                     .foregroundStyle(.secondary)
-            }
-
-            if case .failed(let message) = state.speedTest.phase {
-                Text(message)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(12)
@@ -155,38 +133,124 @@ struct PanelView: View {
         .background(PanelCardBackground())
     }
 
+    private var speedTestMethodTitle: String {
+        if state.speedTest.isRunning {
+            return SpeedTestResult.methodTitle(for: state.speedTest.providerName)
+        }
+        if let source = state.speedTest.lastResult?.source {
+            return SpeedTestResult.methodTitle(for: source)
+        }
+        return SpeedTestResult.methodTitle(
+            for: state.settings.useOoklaSpeedTest ? "speedtest" : "networkQuality"
+        )
+    }
+
     @ViewBuilder
     private var runButton: some View {
-        if state.speedTest.isRunning {
-            VStack(spacing: 8) {
-                Text("\(state.speedTest.progressPercent)% complete")
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
+        Group {
+            if state.speedTest.isRunning {
+                VStack(spacing: 8) {
+                    Text("\(state.speedTest.progressPercent)% complete")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
 
-                ProgressView(value: state.speedTest.percentComplete)
-                    .progressViewStyle(.linear)
+                    ProgressView(value: state.speedTest.percentComplete)
+                        .progressViewStyle(.linear)
 
-                Text(state.speedTest.stageLine)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .animation(.easeInOut(duration: 0.2), value: state.speedTest.stageLine)
+                    Text(state.speedTest.stageLine)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .animation(.easeInOut(duration: 0.2), value: state.speedTest.stageLine)
+                }
+                .padding(.vertical, 2)
+                .transition(.opacity)
+            } else {
+                Button {
+                    state.runSpeedTest()
+                } label: {
+                    Text("Run again")
+                        .font(.system(size: 13, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
+                .disabled(state.speedTest.isRunning)
+                .transition(.opacity)
             }
-            .padding(.vertical, 2)
-        } else {
-            Button {
-                state.runSpeedTest()
-            } label: {
-                Text("Run again")
-                    .font(.system(size: 13, weight: .semibold))
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.regular)
-            .disabled(state.speedTest.isRunning)
         }
+        .animation(.easeInOut(duration: 0.25), value: state.speedTest.isRunning)
+    }
+}
+
+private struct SpeedMetricsRow: View {
+    var speedTest: SpeedTestRunner
+
+    var body: some View {
+        let result = speedTest.lastResult
+        Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 2) {
+            GridRow {
+                metricLabel("Download")
+                metricLabel("Upload")
+                Color.clear.gridCellUnsizedAxes(.vertical)
+            }
+            GridRow(alignment: .firstTextBaseline) {
+                speedFigure(
+                    result?.downloadMbps.map(ThroughputFormat.mbpsValue) ?? "—",
+                    isStale: result != nil && speedTest.isDownloadStale
+                )
+                speedFigure(
+                    result?.uploadMbps.map(ThroughputFormat.mbpsValue) ?? "—",
+                    isStale: result != nil && speedTest.isUploadStale
+                )
+                Color.clear.gridCellUnsizedAxes(.vertical)
+            }
+            GridRow {
+                pingFigure(
+                    result?.downloadLatencyMs.map(ThroughputFormat.latency) ?? "— ms",
+                    isStale: result?.downloadLatencyMs == nil || speedTest.isDownloadLatencyStale
+                )
+                pingFigure(
+                    result?.uploadLatencyMs.map(ThroughputFormat.latency) ?? "— ms",
+                    isStale: result?.uploadLatencyMs == nil || speedTest.isUploadLatencyStale
+                )
+                pingFigure(
+                    result?.latencyMs.map(ThroughputFormat.latency) ?? "— ms",
+                    isStale: result != nil && speedTest.isLatencyStale
+                )
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func metricLabel(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 11, weight: .medium, design: .rounded))
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func speedFigure(_ value: String, isStale: Bool) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            SpeedMetricText(text: value, isStale: isStale)
+                .font(.system(size: 22, weight: .semibold, design: .rounded))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text("Mbps")
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func pingFigure(_ value: String, isStale: Bool) -> some View {
+        SpeedMetricText(text: value, isStale: isStale)
+            .font(.system(size: 14, weight: .medium, design: .rounded))
+            .lineLimit(1)
+            .padding(.top, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -196,8 +260,11 @@ private struct SpeedMetricText: View {
 
     var body: some View {
         Text(text)
-            .foregroundStyle(isStale ? .secondary : .primary)
-            .opacity(isStale ? 0.45 : 1)
+            .monospacedDigit()
+            .fontWeight(isStale ? .regular : .semibold)
+            .foregroundStyle(.primary)
+            .opacity(isStale ? 0.32 : 1)
+            .compositingGroup()
     }
 }
 
@@ -263,10 +330,10 @@ private struct RateColumn: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: symbol)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(.secondary)
             Text(value)
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .font(.system(size: 13, weight: .medium, design: .rounded))
                 .monospacedDigit()
         }
         .frame(maxWidth: .infinity, alignment: alignment == .leading ? .leading : .trailing)
@@ -285,9 +352,60 @@ private struct SectionLabel: View {
     }
 }
 
-private struct PanelCardBackground: View {
+struct PanelCardBackground: View {
     var body: some View {
         RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(Color.primary.opacity(0.045))
+            .fill(Color.primary.opacity(0.09))
+    }
+}
+
+private struct PopoverChromeLock: NSViewRepresentable {
+    func makeNSView(context: Context) -> LockView {
+        LockView()
+    }
+
+    func updateNSView(_ nsView: LockView, context: Context) {
+        nsView.lock()
+    }
+
+    final class LockView: NSView {
+        private var observers: [NSObjectProtocol] = []
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            observers.forEach { NotificationCenter.default.removeObserver($0) }
+            observers = []
+            guard let window else { return }
+            lock()
+            let center = NotificationCenter.default
+            let names: [Notification.Name] = [
+                NSWindow.didResignKeyNotification,
+                NSWindow.didBecomeKeyNotification,
+                NSApplication.didResignActiveNotification,
+                NSApplication.didBecomeActiveNotification,
+            ]
+            observers = names.map { name in
+                let object: Any? = name == NSWindow.didResignKeyNotification || name == NSWindow.didBecomeKeyNotification
+                    ? window
+                    : NSApp
+                return center.addObserver(forName: name, object: object, queue: .main) { [weak self] _ in
+                    self?.lock()
+                }
+            }
+        }
+
+        func lock() {
+            guard let window else { return }
+            let appearance = NSApp.effectiveAppearance
+            window.appearance = appearance
+            func visit(_ view: NSView) {
+                view.appearance = appearance
+                if let effect = view as? NSVisualEffectView {
+                    effect.state = .active
+                }
+                view.subviews.forEach(visit)
+            }
+            visit(window.contentView?.superview ?? window.contentView ?? self)
+        }
     }
 }

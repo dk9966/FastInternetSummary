@@ -35,15 +35,19 @@ enum ByteRateFormat {
 }
 
 enum ThroughputFormat {
-    static func mbps(_ value: Double) -> String {
+    static func mbpsValue(_ value: Double) -> String {
         if value >= 10 {
-            return "\(Int(value.rounded())) Mbps"
+            return "\(Int(value.rounded()))"
         }
-        return String(format: "%0.1f Mbps", value)
+        return String(format: "%0.1f", value)
     }
 
     static func latency(_ milliseconds: Double) -> String {
         "\(Int(milliseconds.rounded())) ms"
+    }
+
+    static func latencyValue(_ milliseconds: Double) -> String {
+        "\(Int(milliseconds.rounded()))"
     }
 }
 

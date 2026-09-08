@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 struct CommandOutput: Sendable {
@@ -143,8 +144,16 @@ private final class ProcessHandle: @unchecked Sendable {
     }
 
     private func terminateIfRunning() {
-        if process.isRunning {
-            process.terminate()
+        guard process.isRunning else { return }
+        process.terminate()
+        let pid = process.processIdentifier
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.4) { [weak self] in
+            guard let self else { return }
+            self.lock.lock()
+            let alreadyFinished = self.didFinish
+            self.lock.unlock()
+            guard !alreadyFinished, pid > 0, self.process.isRunning else { return }
+            kill(pid, SIGKILL)
         }
     }
 

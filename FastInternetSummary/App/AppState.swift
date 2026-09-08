@@ -35,6 +35,7 @@ final class AppState {
     func apply(_ snapshot: NetworkSnapshot) {
         self.snapshot = snapshot
         sampler.setInterface(snapshot.activeInterfaceName)
+        warmOoklaIfNeeded()
     }
 
     func setSampleInterval(_ interval: TimeInterval) {
@@ -61,12 +62,23 @@ final class AppState {
         onHotkeyChange?()
     }
 
+    func setUseOoklaSpeedTest(_ enabled: Bool) {
+        settings.useOoklaSpeedTest = enabled
+        warmOoklaIfNeeded()
+    }
+
     func runSpeedTest() {
         if settings.useOoklaSpeedTest {
-            speedTest.run(sequential: true, using: OoklaSpeedTestProvider())
+            let key = OoklaNearbyServer.networkKey(from: snapshot)
+            speedTest.run(sequential: true, using: OoklaSpeedTestProvider(networkKey: key))
         } else {
             speedTest.run(sequential: !settings.simultaneousSpeedTest)
         }
+    }
+
+    private func warmOoklaIfNeeded() {
+        guard settings.useOoklaSpeedTest, snapshot.hasInternet, OoklaCLI.isAvailable else { return }
+        OoklaNearbyServer.warm(networkKey: OoklaNearbyServer.networkKey(from: snapshot))
     }
 
     func closePanel() {

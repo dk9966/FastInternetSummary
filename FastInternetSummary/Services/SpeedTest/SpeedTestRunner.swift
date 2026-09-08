@@ -17,13 +17,14 @@ final class SpeedTestRunner {
     private(set) var percentComplete: Double = 0
     private(set) var sawFinalSummary = false
 
-    private var providerName = "networkQuality"
+    private(set) var providerName = "networkQuality"
     private var inFlight = false
     private var savedResult: SpeedTestResult?
     private var receivedDownloadThisRun = false
     private var receivedUploadThisRun = false
     private var receivedLatencyThisRun = false
-    private var receivedResponsivenessThisRun = false
+    private var receivedDownloadLatencyThisRun = false
+    private var receivedUploadLatencyThisRun = false
     private var downloadFlows = 0
     private var uploadFlows = 0
     private var startedAt: Date?
@@ -32,6 +33,8 @@ final class SpeedTestRunner {
     private var progressTimer: Timer?
     private var sequentialThisRun = false
     private var reportedFraction: Double?
+    private var liveStage: SpeedTestLiveStage?
+    private var finishedAt: Date?
 
     private var typicalDuration: TimeInterval {
         sequentialThisRun ? 30 : 16
@@ -47,6 +50,16 @@ final class SpeedTestRunner {
     var isDownloadStale: Bool { isRunning && !receivedDownloadThisRun }
     var isUploadStale: Bool { isRunning && !receivedUploadThisRun }
     var isLatencyStale: Bool { isRunning && !receivedLatencyThisRun }
+    var isDownloadLatencyStale: Bool { isRunning && !receivedDownloadLatencyThisRun }
+    var isUploadLatencyStale: Bool { isRunning && !receivedUploadLatencyThisRun }
+
+    /// Time of the last finished test. Stays on the previous result while a new run is in flight.
+    var lastCheckedAt: Date? {
+        if isRunning {
+            return savedResult?.testedAt
+        }
+        return lastResult?.testedAt
+    }
 
     var progressPercent: Int {
         Int((percentComplete * 100).rounded(.down))
@@ -56,31 +69,33 @@ final class SpeedTestRunner {
         if !receivedLatencyThisRun {
             return "Measuring idle latency"
         }
+        if progressPercent >= 100 {
+            return "Finished"
+        }
         if sawFinalSummary || percentComplete >= 0.97 {
             return "Finishing up"
         }
+        // Download samples start arriving while download is still running.
+        // Upload samples (or an explicit upload stage) mean upload has started.
         if sequentialThisRun {
-            if !receivedDownloadThisRun {
-                return "Measuring download"
-            }
-            if !receivedUploadThisRun {
-                return "Measuring upload"
-            }
-            return "Settling the numbers"
+            let uploadStarted = liveStage == .upload
+                || receivedUploadThisRun
+                || (reportedFraction ?? 0) > 0.52
+            return uploadStarted ? "Measuring upload" : "Measuring download"
         }
-        if !receivedDownloadThisRun {
+        switch liveStage {
+        case .download:
+            return "Measuring download"
+        case .upload:
+            return "Measuring upload"
+        case .both:
+            return "Measuring download and upload"
+        case nil:
+            if receivedDownloadThisRun || receivedUploadThisRun {
+                return "Measuring download and upload"
+            }
             return "Starting test"
         }
-        if !receivedUploadThisRun {
-            return "Measuring download"
-        }
-        if !receivedResponsivenessThisRun {
-            return "Measuring upload"
-        }
-        if downloadFlows < 10, uploadFlows < 10 {
-            return "Stressing the connection"
-        }
-        return "Settling the numbers"
     }
 
     init() {
@@ -96,11 +111,14 @@ final class SpeedTestRunner {
         receivedDownloadThisRun = false
         receivedUploadThisRun = false
         receivedLatencyThisRun = false
-        receivedResponsivenessThisRun = false
+        receivedDownloadLatencyThisRun = false
+        receivedUploadLatencyThisRun = false
         sawFinalSummary = false
+        finishedAt = nil
         downloadFlows = 0
         uploadFlows = 0
         reportedFraction = nil
+        liveStage = nil
         savedResult = SpeedTestResult.load() ?? lastResult
         let id = UUID()
         runID = id
@@ -125,6 +143,7 @@ final class SpeedTestRunner {
         lastResult = savedResult
         percentComplete = 0
         startedAt = nil
+        finishedAt = nil
         phase = .idle
     }
 
@@ -139,10 +158,18 @@ final class SpeedTestRunner {
             lastResult = result
             result.save()
             savedResult = result
-            percentComplete = 1
+            markFinished()
             stopProgressTicker()
+            try await holdFinishedDisplay(id: id)
+            guard runID == id else { return }
             phase = .idle
         } catch is CancellationError {
+            guard runID == id else { return }
+            lastResult = savedResult
+            stopProgressTicker()
+            percentComplete = 0
+            phase = .idle
+        } catch SpeedTestError.skipped {
             guard runID == id else { return }
             lastResult = savedResult
             stopProgressTicker()
@@ -155,7 +182,7 @@ final class SpeedTestRunner {
             }
             stopProgressTicker()
             percentComplete = 0
-            phase = .failed(error.localizedDescription)
+            phase = .idle
         }
 
         if runID == id {
@@ -177,18 +204,29 @@ final class SpeedTestRunner {
         )
         if let download = progress.downloadMbps {
             next.downloadMbps = download
+            if !receivedDownloadThisRun {
+                next.downloadLatencyMs = progress.downloadLatencyMs
+            }
             receivedDownloadThisRun = true
         }
         if let upload = progress.uploadMbps {
             next.uploadMbps = upload
+            if !receivedUploadThisRun {
+                next.uploadLatencyMs = progress.uploadLatencyMs
+            }
             receivedUploadThisRun = true
         }
         if let latency = progress.latencyMs {
             next.latencyMs = latency
             receivedLatencyThisRun = true
         }
-        if progress.hasLoadedRoundTrip {
-            receivedResponsivenessThisRun = true
+        if let downloadLatency = progress.downloadLatencyMs {
+            next.downloadLatencyMs = downloadLatency
+            receivedDownloadLatencyThisRun = true
+        }
+        if let uploadLatency = progress.uploadLatencyMs {
+            next.uploadLatencyMs = uploadLatency
+            receivedUploadLatencyThisRun = true
         }
         if let flows = progress.downloadFlows {
             downloadFlows = max(downloadFlows, flows)
@@ -199,12 +237,18 @@ final class SpeedTestRunner {
         if let fraction = progress.fractionComplete {
             reportedFraction = fraction
         }
+        if let stage = progress.liveStage {
+            let alreadyUploading = sequentialThisRun && liveStage == .upload
+            if !alreadyUploading {
+                liveStage = stage
+            }
+        }
         next.source = providerName
-        next.testedAt = .now
-        lastResult = next
         if progress.isFinal {
+            next.testedAt = .now
             sawFinalSummary = true
         }
+        lastResult = next
         phase = .measuring
         refreshPercent(isFinal: progress.isFinal)
 
@@ -230,10 +274,26 @@ final class SpeedTestRunner {
         progressTimer = nil
     }
 
+    private func markFinished() {
+        percentComplete = 1
+        if finishedAt == nil {
+            finishedAt = .now
+        }
+    }
+
+    private func holdFinishedDisplay(id: UUID) async throws {
+        let minimumVisible: TimeInterval = 0.7
+        let elapsed = finishedAt.map { Date().timeIntervalSince($0) } ?? 0
+        let remaining = minimumVisible - elapsed
+        guard remaining > 0 else { return }
+        try await Task.sleep(for: .seconds(remaining))
+        guard runID == id else { throw CancellationError() }
+    }
+
     private func refreshPercent(isFinal: Bool) {
         guard isRunning else { return }
         if isFinal {
-            percentComplete = 1
+            markFinished()
             return
         }
         if let reportedFraction {

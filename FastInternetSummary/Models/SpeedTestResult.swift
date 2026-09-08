@@ -4,11 +4,17 @@ struct SpeedTestResult: Sendable, Equatable, Codable {
     var downloadMbps: Double?
     var uploadMbps: Double?
     var latencyMs: Double?
+    var downloadLatencyMs: Double? = nil
+    var uploadLatencyMs: Double? = nil
     var testedAt: Date
     var source: String
 
     var isComplete: Bool {
         downloadMbps != nil && uploadMbps != nil
+    }
+
+    static func methodTitle(for source: String) -> String {
+        source == "speedtest" ? "Ookla Speedtest" : "MacOS Network Quality"
     }
 
     private enum Keys {
@@ -33,6 +39,7 @@ enum SpeedTestError: LocalizedError {
     case failed(String)
     case unreadableOutput
     case notConfigured
+    case skipped
 
     var errorDescription: String? {
         switch self {
@@ -44,6 +51,8 @@ enum SpeedTestError: LocalizedError {
             "Could not read the speed test result."
         case .notConfigured:
             "This speed test provider is not available."
+        case .skipped:
+            nil
         }
     }
 }

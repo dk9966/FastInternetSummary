@@ -1,12 +1,21 @@
 import Foundation
 
+enum SpeedTestLiveStage: Sendable, Equatable {
+    case download
+    case upload
+    case both
+}
+
 struct SpeedTestProgress: Sendable, Equatable {
     var downloadMbps: Double?
     var uploadMbps: Double?
     var latencyMs: Double?
+    var downloadLatencyMs: Double?
+    var uploadLatencyMs: Double?
     var downloadFlows: Int?
     var uploadFlows: Int?
     var fractionComplete: Double?
+    var liveStage: SpeedTestLiveStage?
     var hasLoadedRoundTrip: Bool = false
     var isFinal: Bool = false
 }
@@ -22,8 +31,8 @@ struct NetworkQualityProvider: SpeedTestProvider {
 
     func run(sequential: Bool, progress: @escaping @Sendable (SpeedTestProgress) async -> Void) async throws -> SpeedTestResult {
         // Idle latency is measured on a quiet line before capacity testing saturates it.
-        // Verbose capacity output never streams ms — only the summary at the end — so we
-        // probe first (`-d -u`) and publish base_rtt before the capacity run starts.
+        // Verbose capacity lines stream RPM, not idle ms, so we probe first (`-d -u`)
+        // and publish base_rtt before the capacity run starts.
         let idleLatencyMs = try await streamIdleLatency(progress: progress)
 
         let parser = NetworkQualityStreamParser()
@@ -55,6 +64,8 @@ struct NetworkQualityProvider: SpeedTestProvider {
                     downloadMbps: $0.downloadMbps,
                     uploadMbps: $0.uploadMbps,
                     latencyMs: $0.latencyMs,
+                    downloadLatencyMs: $0.downloadLatencyMs,
+                    uploadLatencyMs: $0.uploadLatencyMs,
                     isFinal: true
                 )
             }
@@ -72,10 +83,15 @@ struct NetworkQualityProvider: SpeedTestProvider {
 
         let latencyMs = latest.latencyMs ?? idleLatencyMs
 
+        let downloadLatencyMs = latest.downloadLatencyMs
+        let uploadLatencyMs = latest.uploadLatencyMs
+
         let final = SpeedTestProgress(
             downloadMbps: downloadMbps,
             uploadMbps: uploadMbps,
             latencyMs: latencyMs,
+            downloadLatencyMs: downloadLatencyMs,
+            uploadLatencyMs: uploadLatencyMs,
             downloadFlows: latest.downloadFlows,
             uploadFlows: latest.uploadFlows,
             isFinal: true
@@ -86,6 +102,8 @@ struct NetworkQualityProvider: SpeedTestProvider {
             downloadMbps: downloadMbps,
             uploadMbps: uploadMbps,
             latencyMs: latencyMs,
+            downloadLatencyMs: downloadLatencyMs,
+            uploadLatencyMs: uploadLatencyMs,
             testedAt: .now,
             source: name
         )
@@ -132,7 +150,25 @@ final class NetworkQualityStreamParser: @unchecked Sendable {
         if !chunk.isEmpty {
             raw += chunk
         }
-        let parsed = Self.parse(raw)
+        guard var parsed = Self.parse(raw) else { return nil }
+
+        // Sequential output keeps the last download figure on screen while
+        // upload runs, so "both numbers exist" is not the current phase.
+        // Whatever moved this tick is.
+        if let previous = current, parsed.liveStage != .upload {
+            let downloadMoved = parsed.downloadMbps != previous.downloadMbps
+                || parsed.downloadFlows != previous.downloadFlows
+            let uploadMoved = parsed.uploadMbps != previous.uploadMbps
+                || parsed.uploadFlows != previous.uploadFlows
+            if uploadMoved, !downloadMoved {
+                parsed.liveStage = .upload
+            } else if downloadMoved, !uploadMoved {
+                parsed.liveStage = .download
+            } else if downloadMoved, uploadMoved {
+                parsed.liveStage = .both
+            }
+        }
+
         guard parsed != current else { return nil }
         current = parsed
         return parsed
@@ -170,22 +206,84 @@ final class NetworkQualityStreamParser: @unchecked Sendable {
             progress.latencyMs = idle
         }
 
-        let hasCapacitySummary = text.contains("==== SUMMARY ====")
-            || text.contains("Downlink capacity:")
-            || text.contains("Download capacity:")
-        // Sequential `-s` prints downlink capacity before upload starts. Both
-        // directions have to be present or the panel would jump to "done" early.
-        progress.isFinal = hasCapacitySummary
+        progress.downloadLatencyMs = loadedLatencyMs(heading: "Downlink Responsiveness", in: text)
+            ?? loadedLatencyMs(heading: "Downlink Loaded Latency", in: text)
+            ?? milliseconds(fromRPM: lastNumber(in: text, pattern: #"Downlink:[^\n]*?responsiveness\s+([0-9.]+)\s*RPM"#))
+        progress.uploadLatencyMs = loadedLatencyMs(heading: "Uplink Responsiveness", in: text)
+            ?? loadedLatencyMs(heading: "Uplink Loaded Latency", in: text)
+            ?? milliseconds(fromRPM: lastNumber(in: text, pattern: #"Uplink:[^\n]*?responsiveness\s+([0-9.]+)\s*RPM"#))
+
+        // Live TTY is `Downlink: capacity 12 Mbps`. The phase-complete line is
+        // `Downlink capacity: 12 Mbps` — no colon after Downlink. Sequential `-s`
+        // prints that download summary before upload starts.
+        let sawDownloadSummary = text.contains("Downlink capacity:") || text.contains("Download capacity:")
+        let sawUploadSummary = text.contains("Uplink capacity:") || text.contains("Upload capacity:")
+        if sawDownloadSummary, !sawUploadSummary {
+            progress.liveStage = .upload
+        } else if progress.downloadMbps != nil, progress.uploadMbps != nil {
+            progress.liveStage = .both
+        } else if progress.uploadMbps != nil {
+            progress.liveStage = .upload
+        } else if progress.downloadMbps != nil {
+            progress.liveStage = .download
+        }
+
+        progress.isFinal = (text.contains("==== SUMMARY ====") || (sawDownloadSummary && sawUploadSummary))
             && progress.downloadMbps != nil
             && progress.uploadMbps != nil
 
         if progress.downloadMbps == nil,
            progress.uploadMbps == nil,
            progress.latencyMs == nil,
+           progress.downloadLatencyMs == nil,
+           progress.uploadLatencyMs == nil,
            progress.downloadFlows == nil {
             return nil
         }
         return progress
+    }
+
+    /// Headline loaded latency after a responsiveness heading. Prefers the rest
+    /// of that line, then the next line, so a neighboring Uplink/Downlink
+    /// heading cannot leak in.
+    private static func loadedLatencyMs(heading: String, in text: String) -> Double? {
+        let pattern = "\(NSRegularExpression.escapedPattern(for: heading)):([^\\n]*)\\n?([^\\n]*)"
+        guard let regex = try? NSRegularExpression(
+            pattern: pattern,
+            options: [.caseInsensitive]
+        ) else {
+            return nil
+        }
+        let range = NSRange(text.startIndex..., in: text)
+        let matches = regex.matches(in: text, options: [], range: range)
+        guard let match = matches.last else { return nil }
+        if match.numberOfRanges >= 2, let snippetRange = Range(match.range(at: 1), in: text),
+           let ms = firstDurationMs(in: String(text[snippetRange])) {
+            return ms
+        }
+        if match.numberOfRanges >= 3, let snippetRange = Range(match.range(at: 2), in: text) {
+            return firstDurationMs(in: String(text[snippetRange]))
+        }
+        return nil
+    }
+
+    private static func firstDurationMs(in text: String) -> Double? {
+        if let ms = firstNumber(in: text, pattern: #"([0-9.]+)\s*milliseconds"#) {
+            return ms
+        }
+        if let seconds = firstNumber(in: text, pattern: #"([0-9.]+)\s*seconds"#) {
+            return seconds * 1000
+        }
+        return nil
+    }
+
+    private static func milliseconds(fromRPM rpm: Double?) -> Double? {
+        guard let rpm, rpm > 0 else { return nil }
+        return 60_000 / rpm
+    }
+
+    private static func firstNumber(in text: String, pattern: String) -> Double? {
+        number(in: text, pattern: pattern, last: false)
     }
 
     private static func lastMbps(in text: String, patterns: [String]) -> Double? {
@@ -202,12 +300,16 @@ final class NetworkQualityStreamParser: @unchecked Sendable {
     }
 
     private static func lastNumber(in text: String, pattern: String) -> Double? {
+        number(in: text, pattern: pattern, last: true)
+    }
+
+    private static func number(in text: String, pattern: String, last: Bool) -> Double? {
         guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
             return nil
         }
         let range = NSRange(text.startIndex..., in: text)
         let matches = regex.matches(in: text, options: [], range: range)
-        guard let match = matches.last, match.numberOfRanges >= 2,
+        guard let match = (last ? matches.last : matches.first), match.numberOfRanges >= 2,
               let valueRange = Range(match.range(at: 1), in: text) else {
             return nil
         }
@@ -231,6 +333,8 @@ enum NetworkQualityParser {
         var dl_throughput: FlexibleDouble?
         var ul_throughput: FlexibleDouble?
         var base_rtt: FlexibleDouble?
+        var dl_responsiveness: FlexibleDouble?
+        var ul_responsiveness: FlexibleDouble?
         var error_domain: String?
         var error_code: Int?
     }
@@ -254,6 +358,8 @@ enum NetworkQualityParser {
             downloadMbps: downBps / 1_000_000,
             uploadMbps: upBps / 1_000_000,
             latencyMs: decoded.base_rtt?.value,
+            downloadLatencyMs: milliseconds(fromRPM: decoded.dl_responsiveness?.value),
+            uploadLatencyMs: milliseconds(fromRPM: decoded.ul_responsiveness?.value),
             testedAt: .now,
             source: "networkQuality"
         )
@@ -261,6 +367,11 @@ enum NetworkQualityParser {
 
     static func parseIdleLatency(_ data: Data) -> Double? {
         (try? decodePayload(data))?.base_rtt?.value
+    }
+
+    private static func milliseconds(fromRPM rpm: Double?) -> Double? {
+        guard let rpm, rpm > 0 else { return nil }
+        return 60_000 / rpm
     }
 
     private static func extractJSON(from data: Data) throws -> Data {

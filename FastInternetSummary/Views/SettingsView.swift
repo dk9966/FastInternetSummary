@@ -24,12 +24,15 @@ struct SettingsView: View {
                     .font(.system(size: 11))
                     .foregroundStyle(.orange)
             }
-            Button("Quit Fast Internet Summary") {
+            Button {
                 NSApp.terminate(nil)
+            } label: {
+                Text("Quit Fast Internet Summary")
+                    .font(.system(size: 13, weight: .semibold))
+                    .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.plain)
-            .font(.system(size: 12))
-            .foregroundStyle(.secondary)
+            .buttonStyle(.bordered)
+            .controlSize(.regular)
         }
         .padding(PanelMetrics.padding)
         .fixedSize(horizontal: false, vertical: true)
@@ -84,17 +87,20 @@ struct SettingsView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.primary.opacity(0.045))
-        }
+        .background(PanelCardBackground())
         .font(.system(size: 13))
     }
 
     private var speedTest: some View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
-                Toggle("Use Speedtest (Ookla)", isOn: $state.settings.useOoklaSpeedTest)
+                Toggle(
+                    "Use Speedtest (Ookla)",
+                    isOn: Binding(
+                        get: { state.settings.useOoklaSpeedTest },
+                        set: { state.setUseOoklaSpeedTest($0) }
+                    )
+                )
                     .disabled(!OoklaCLI.isAvailable && !state.settings.useOoklaSpeedTest)
                 Text(ooklaCaption)
                     .font(.system(size: 11))
@@ -102,21 +108,19 @@ struct SettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Toggle("Download and upload together", isOn: $state.settings.simultaneousSpeedTest)
-                    .disabled(state.settings.useOoklaSpeedTest)
-                Text(simultaneousCaption)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            if !state.settings.useOoklaSpeedTest {
+                VStack(alignment: .leading, spacing: 4) {
+                    Toggle("Download and upload together", isOn: $state.settings.simultaneousSpeedTest)
+                    Text("Both directions at once. Results can differ from Speedtest.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.primary.opacity(0.045))
-        }
+        .background(PanelCardBackground())
         .font(.system(size: 13))
     }
 
@@ -128,13 +132,6 @@ struct SettingsView: View {
             return "Speedtest CLI is not installed. Turn this off, or install it with brew tap teamookla/speedtest && brew install speedtest."
         }
         return "Optional. Install with brew tap teamookla/speedtest && brew install speedtest."
-    }
-
-    private var simultaneousCaption: String {
-        if state.settings.useOoklaSpeedTest {
-            return "Speedtest always measures download, then upload."
-        }
-        return "Both directions at once. Results can differ from Speedtest."
     }
 
     private var shortcut: some View {
@@ -150,10 +147,7 @@ struct SettingsView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.primary.opacity(0.045))
-        }
+        .background(PanelCardBackground())
         .background {
             if isRecordingShortcut {
                 ShortcutCatcher { keyCode, modifiers in

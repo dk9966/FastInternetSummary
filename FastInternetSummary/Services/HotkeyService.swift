@@ -10,6 +10,8 @@ final class HotkeyService: @unchecked Sendable {
     private var modifiers: UInt32
     private let identifier: UInt32
     private let onPressed: @MainActor () -> Void
+    private let pressLock = NSLock()
+    private var lastPressAt = Date.distantPast
 
     private static nonisolated(unsafe) var instances: [UInt32: HotkeyService] = [:]
     private static nonisolated(unsafe) var handlerRef: EventHandlerRef?
@@ -57,6 +59,15 @@ final class HotkeyService: @unchecked Sendable {
         }
     }
 
+    private func shouldFire() -> Bool {
+        pressLock.lock()
+        defer { pressLock.unlock() }
+        let now = Date()
+        guard now.timeIntervalSince(lastPressAt) > 0.35 else { return false }
+        lastPressAt = now
+        return true
+    }
+
     private static func installHandlerIfNeeded() {
         guard handlerRef == nil else { return }
 
@@ -95,6 +106,7 @@ final class HotkeyService: @unchecked Sendable {
         }
 
         Task { @MainActor in
+            guard service.shouldFire() else { return }
             service.onPressed()
         }
         return noErr
