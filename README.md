@@ -8,7 +8,7 @@ No Dock icon. Click the plug/antenna, or press **⌥⌘.**, and a compact panel 
 
 ## Install
 
-macOS 15 or later. No Xcode.
+macOS 15 or later.
 
 <p>
   <a href="https://github.com/dk9966/FastInternetSummary/releases/latest/download/FastInternetSummary.dmg">
@@ -40,8 +40,6 @@ open FastInternetSummary.xcodeproj                     # work on the code
 
 Select the **FastInternetSummary** scheme and run (⌘R).
 
-Push a `v*` tag (for example `v1.0.0`) to publish a new disk image on [GitHub Releases](https://github.com/dk9966/FastInternetSummary/releases). The Download button always points at the latest one.
-
 ## Uninstall
 
 Quit from Settings, or Control-/right-click the menu-bar icon. Turn off Launch at Login first if it is on (in the app, or System Settings → General → Login Items). Drag **Fast Internet Summary** from Applications to the Trash.
@@ -72,7 +70,7 @@ Do not mix the last two numbers. Live activity is traffic right now. The speed t
 | Action        | How                                                        |
 | ------------- | ---------------------------------------------------------- |
 | Open / toggle | Click the menu-bar icon, or **⌥⌘.**                        |
-| Close         | X button, or **Escape**                                    |
+| Close         | X button, **Escape**, or **⌥⌘.** again                     |
 | Settings      | Gear next to the title                                     |
 | Quit          | Settings, or Control-click / right-click the menu-bar icon |
 
