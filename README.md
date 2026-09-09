@@ -16,13 +16,13 @@ macOS 15 or later.
   </a>
 </p>
 
-Open the disk image and drag **Fast Internet Summary** onto **Applications**. Open it from Applications or Spotlight. Look for the plug/antenna in the menu bar.
+Open the disk image and drag **Fast Internet Summary** onto **Applications**. Open it from Applications or Spotlight. Look for the plug/antenna in the menu bar. The first launch installs Ookla’s Speedtest CLI if this Mac does not already have it.
 
 The first time, macOS may say it cannot verify the developer. Close that window, Control-click the app, choose **Open**, then **Open** again. If it still blocks, System Settings → Privacy & Security → **Open Anyway**.
 
 ### From source
 
-Xcode from the App Store (open it once to accept the license). No Homebrew, accounts, or Swift packages. Speed tests use macOS’s `networkQuality` unless you optionally install Ookla’s CLI.
+Xcode from the App Store (open it once to accept the license). No Homebrew, accounts, or Swift packages. Speed tests use macOS’s `networkQuality` by default. `scripts/install.sh` also installs Ookla’s CLI if it is missing, so you can switch in Settings.
 
 ```bash
 git clone https://github.com/dk9966/FastInternetSummary.git
@@ -30,7 +30,7 @@ cd FastInternetSummary
 bash scripts/install.sh
 ```
 
-Builds a Release app, copies it to `/Applications` (or `~/Applications` if needed), and opens it.
+Builds a Release app, copies it to `/Applications` (or `~/Applications` if needed), installs Ookla’s CLI if needed, and opens it.
 
 ```bash
 PREFIX="$HOME/Applications" bash scripts/install.sh   # install elsewhere
@@ -46,6 +46,7 @@ Quit from Settings, or Control-/right-click the menu-bar icon. Turn off Launch a
 
 ```bash
 rm -rf /Applications/FastInternetSummary.app ~/Applications/FastInternetSummary.app
+rm -rf "$HOME/Library/Application Support/com.danielku.FastInternetSummary"
 defaults delete com.danielku.FastInternetSummary   # optional; settings are local
 ```
 
@@ -82,7 +83,9 @@ Live rates come from `getifaddrs` byte counters on the active interface.
 
 Default speed test is `/usr/bin/networkQuality`. Idle latency is Apple’s `base_rtt`: a few quiet-line probes before the line is saturated. Capacity is sequential by default (`-s`); Settings can run download and upload at once. Verbose TTY output is parsed so Mbps updates live. Loaded ping is Apple’s downlink/uplink responsiveness, in milliseconds.
 
-If **Use Speedtest (Ookla)** is on, the app runs `speedtest --format=jsonl` against a nearby server (remembered ~30 minutes so the next test can skip the hunt). JSONL is parsed so idle ping, download, upload, and loaded ping update live. The CLI is optional. Launches are capped so we do not trip Ookla’s rate limit.
+If **Use Speedtest (Ookla)** is on, the app runs `speedtest --format=jsonl` against a nearby server (remembered ~30 minutes so the next test can skip the hunt). JSONL is parsed so idle ping, download, upload, and loaded ping update live. The official CLI is installed automatically when missing (`install.sh`, or first launch from the disk image). Homebrew is used when it is already on the Mac; otherwise the universal binary is downloaded from Ookla. Launches are capped so we do not trip Ookla’s rate limit.
+
+To install the CLI yourself:
 
 ```bash
 brew tap teamookla/speedtest

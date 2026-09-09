@@ -31,6 +31,10 @@ rm -rf "$dest"
 ditto "$built" "$dest"
 xattr -dr com.apple.quarantine "$dest" 2>/dev/null || true
 
+if ! bash "$root/scripts/install-speedtest.sh"; then
+  echo "Speedtest CLI could not be installed now. MacOS Network Quality still works, and the app will try again on launch." >&2
+fi
+
 open "$dest"
 
 echo "Installed to $dest"

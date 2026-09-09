@@ -14,6 +14,8 @@ final class AppState {
     var onHotkeyChange: (() -> Void)?
     var onClosePanel: (() -> Void)?
     private(set) var isPanelOpen = false
+    var ooklaCLIAvailable = OoklaCLI.isAvailable
+    var isInstallingOoklaCLI = false
 
     private let routeMonitor = RouteMonitor()
     private let sampler = ByteRateSampler()
@@ -33,6 +35,8 @@ final class AppState {
             }
         }
         routeMonitor.start()
+
+        Task { await self.installOoklaCLIIfNeeded() }
     }
 
     func apply(_ snapshot: NetworkSnapshot) {
@@ -121,5 +125,20 @@ final class AppState {
 
     func closePanel() {
         onClosePanel?()
+    }
+
+    func refreshOoklaCLI() {
+        Task { await installOoklaCLIIfNeeded() }
+    }
+
+    /// DMG installs have no script, so first launch fetches the CLI when missing.
+    private func installOoklaCLIIfNeeded() async {
+        ooklaCLIAvailable = OoklaCLI.isAvailable
+        guard !ooklaCLIAvailable, !isInstallingOoklaCLI else { return }
+        isInstallingOoklaCLI = true
+        await OoklaCLI.installIfNeeded()
+        isInstallingOoklaCLI = false
+        ooklaCLIAvailable = OoklaCLI.isAvailable
+        warmOoklaIfNeeded()
     }
 }

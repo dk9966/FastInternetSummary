@@ -1,27 +1,5 @@
 import Foundation
 
-/// Locates the official Ookla CLI. A menu-bar app does not inherit the user's
-/// Homebrew PATH, so we look at the two standard prefix locations.
-enum OoklaCLI {
-    static var isAvailable: Bool { executablePath != nil }
-
-    static var executablePath: String? {
-        ["/opt/homebrew/bin/speedtest", "/usr/local/bin/speedtest"]
-            .first { FileManager.default.isExecutableFile(atPath: $0) }
-    }
-
-    static func isRateLimitText(_ text: String) -> Bool {
-        let lowered = text.lowercased()
-        return lowered.contains("too many requests") || lowered.contains("limit reached")
-    }
-
-    static func isRateLimitOutput(_ output: CommandOutput) -> Bool {
-        let stderr = String(data: output.stderr, encoding: .utf8) ?? ""
-        let stdout = String(data: output.stdout, encoding: .utf8) ?? ""
-        return isRateLimitText(stderr) || isRateLimitText(stdout)
-    }
-}
-
 /// Ookla does not publish the CLI limit. Overlapping launches can trip a
 /// block in seconds; ~30–40 tests at once a minute can trip an hour block.
 /// One process at a time, a tiny debounce, and a cap well under that.
@@ -260,7 +238,7 @@ struct OoklaSpeedTestProvider: SpeedTestProvider {
     func run(sequential _: Bool, progress: @escaping @Sendable (SpeedTestProgress) async -> Void) async throws -> SpeedTestResult {
         guard let executable = OoklaCLI.executablePath else {
             throw SpeedTestError.failed(
-                "Speedtest CLI is not installed. Install it with brew tap teamookla/speedtest && brew install speedtest."
+                "Speedtest CLI is not installed. Reopen the app on a network, or install it with brew tap teamookla/speedtest && brew install speedtest."
             )
         }
 

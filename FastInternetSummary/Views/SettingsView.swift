@@ -38,6 +38,7 @@ struct SettingsView: View {
         .fixedSize(horizontal: false, vertical: true)
         .onAppear {
             state.refreshLoginItem()
+            state.refreshOoklaCLI()
         }
     }
 
@@ -101,7 +102,7 @@ struct SettingsView: View {
                         set: { state.setUseOoklaSpeedTest($0) }
                     )
                 )
-                    .disabled(!OoklaCLI.isAvailable && !state.settings.useOoklaSpeedTest)
+                    .disabled(!state.ooklaCLIAvailable && !state.settings.useOoklaSpeedTest)
                 Text(ooklaCaption)
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
@@ -125,13 +126,16 @@ struct SettingsView: View {
     }
 
     private var ooklaCaption: String {
-        if OoklaCLI.isAvailable {
+        if state.ooklaCLIAvailable {
             return "Same engine as the Speedtest app. Uses the official CLI on this Mac."
         }
-        if state.settings.useOoklaSpeedTest {
-            return "Speedtest CLI is not installed. Turn this off, or install it with brew tap teamookla/speedtest && brew install speedtest."
+        if state.isInstallingOoklaCLI {
+            return "Downloading Speedtest CLI from Ookla…"
         }
-        return "Optional. Install with brew tap teamookla/speedtest && brew install speedtest."
+        if state.settings.useOoklaSpeedTest {
+            return "Speedtest CLI is not installed. Turn this off, or reopen the app on a network."
+        }
+        return "Optional. The app installs the official CLI on first launch when it is missing."
     }
 
     private var shortcut: some View {
