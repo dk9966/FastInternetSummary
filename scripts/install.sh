@@ -3,27 +3,9 @@ set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 app_name="FastInternetSummary.app"
-derived="$root/build"
+built="$root/build/Build/Products/Release/$app_name"
 
-if ! command -v xcodebuild >/dev/null 2>&1; then
-  echo "xcodebuild not found. Install Xcode from the App Store, open it once, then run this again." >&2
-  exit 1
-fi
-
-echo "Building Fast Internet Summary (Release)..."
-xcodebuild \
-  -project "$root/FastInternetSummary.xcodeproj" \
-  -scheme FastInternetSummary \
-  -configuration Release \
-  -destination 'platform=macOS' \
-  -derivedDataPath "$derived" \
-  build
-
-built="$derived/Build/Products/Release/$app_name"
-if [[ ! -d "$built" ]]; then
-  echo "Build finished but $app_name was not found at $built." >&2
-  exit 1
-fi
+bash "$root/scripts/build.sh"
 
 dest_dir="${PREFIX:-/Applications}"
 if [[ ! -d "$dest_dir" || ! -w "$dest_dir" ]]; then
@@ -46,7 +28,7 @@ if pgrep -x FastInternetSummary >/dev/null 2>&1; then
 fi
 
 rm -rf "$dest"
-cp -R "$built" "$dest"
+ditto "$built" "$dest"
 xattr -dr com.apple.quarantine "$dest" 2>/dev/null || true
 
 open "$dest"

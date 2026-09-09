@@ -8,7 +8,21 @@ No Dock icon. Click the plug/antenna, or press **⌥⌘.**, and a compact panel 
 
 ## Install
 
-macOS 15+ and Xcode from the App Store (open it once to accept the license). No Homebrew, accounts, or Swift packages. Speed tests use macOS’s `networkQuality` unless you optionally install Ookla’s CLI.
+macOS 15 or later. No Xcode.
+
+<p>
+  <a href="https://github.com/dk9966/FastInternetSummary/releases/latest/download/FastInternetSummary.dmg">
+    <img src="docs/download-mac.svg" alt="Download for Mac" width="196" height="40">
+  </a>
+</p>
+
+Open the disk image and drag **Fast Internet Summary** onto **Applications**. Open it from Applications or Spotlight. Look for the plug/antenna in the menu bar.
+
+The first time, macOS may say it cannot verify the developer. Close that window, Control-click the app, choose **Open**, then **Open** again. If it still blocks, System Settings → Privacy & Security → **Open Anyway**.
+
+### From source
+
+Xcode from the App Store (open it once to accept the license). No Homebrew, accounts, or Swift packages. Speed tests use macOS’s `networkQuality` unless you optionally install Ookla’s CLI.
 
 ```bash
 git clone https://github.com/dk9966/FastInternetSummary.git
@@ -16,18 +30,21 @@ cd FastInternetSummary
 bash scripts/install.sh
 ```
 
-Builds a Release app, copies it to `/Applications` (or `~/Applications` if needed), and opens it. Look for the plug/antenna in the menu bar.
+Builds a Release app, copies it to `/Applications` (or `~/Applications` if needed), and opens it.
 
 ```bash
 PREFIX="$HOME/Applications" bash scripts/install.sh   # install elsewhere
+bash scripts/package-dmg.sh                            # dist/FastInternetSummary.dmg
 open FastInternetSummary.xcodeproj                     # work on the code
 ```
 
 Select the **FastInternetSummary** scheme and run (⌘R).
 
+Push a `v*` tag (for example `v1.0.0`) to publish a new disk image on [GitHub Releases](https://github.com/dk9966/FastInternetSummary/releases). The Download button always points at the latest one.
+
 ## Uninstall
 
-Quit from Settings, or Control-/right-click the menu-bar icon. Turn off Launch at Login first if it is on (in the app, or System Settings → General → Login Items). Then:
+Quit from Settings, or Control-/right-click the menu-bar icon. Turn off Launch at Login first if it is on (in the app, or System Settings → General → Login Items). Drag **Fast Internet Summary** from Applications to the Trash.
 
 ```bash
 rm -rf /Applications/FastInternetSummary.app ~/Applications/FastInternetSummary.app

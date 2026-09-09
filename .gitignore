@@ -3,6 +3,8 @@ CleanShot *
 xcuserdata/
 DerivedData/
 build/
+dist/
+*.dmg
 *.xcuserstate
 *.moved-aside
 .swiftpm/
